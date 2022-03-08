@@ -1,3 +1,5 @@
+from cmath import pi
+from msilib.schema import Directory
 import numpy as np
 from numpy.linalg import *
 import os
@@ -158,7 +160,12 @@ class ModalAnalysis:
     # evals
     # evecs
 
-    def __init__(self, vtk_file, material_file) -> None:
+    def __init__(self, vtk_file, material_file, output_path) -> None:
+        if( os.path.exists(output_path) ):
+            output_path = output_path + '-' + str(int(time.time()))
+        self.output_path = output_path
+
+
         self.vtk_filepath = vtk_file
         self.mesh_points, self.mesh_elements = getMeshInfo_vtk(self.vtk_filepath)
         self.num_vtx = len(self.mesh_points)
@@ -198,38 +205,44 @@ class ModalAnalysis:
         self.evals, self.evecs = eigh(self.K, self.M)
         # omega = np.sqrt(evals)
 
-    def printToFile(self, filepath):
-        f = open(filepath, 'wt')
+    def printToFile(self):
+        if( not os.path.exists(self.output_path) ):
+            os.mkdir(self.output_path)
+        
+        print('[ DEBUG] The output dir is ' + self.output_path)
+
+        f = open(os.path.join(self.output_path, "print.txt"), 'wt')
 
         print("\n# of vtx", file=f)
         print(self.num_vtx, file=f)
 
-        print("\nMass Matrix", file=f)
-        print(self.M, file=f)
+        # print("\nMass Matrix", file=f)
+        # print(self.M, file=f)
 
-        print("\nStiffness Matrix", file=f)
-        print(self.K, file=f)
+        # print("\nStiffness Matrix", file=f)
+        # print(self.K, file=f)
 
-        print("\nEigen values", file=f)
-        print(self.evals, file=f)
+        # print("\nEigen values", file=f)
+        # print(self.evals, file=f)
 
-        print("\nOmega", file=f)
-        print(np.sqrt(self.evals), file=f)
+        print("\nfreq", file=f)
+        print(np.sqrt(self.evals) / 2 / pi, file=f)
 
-        print("\nEigen vectors", file=f)
-        print(self.evecs, file=f)
+        # print("\nEigen vectors", file=f)
+        # print(self.evecs, file=f)
     
-    def saveData(self, dic):
-        if( os.path.exists(dic) ):
-            dic = dic + '-' + str(int(time.time()))
-        os.mkdir(dic)
+    def saveData(self):
+        if( not os.path.exists(self.output_path) ):
+            os.mkdir(self.output_path)
 
-        np.savetxt( os.path.join(dic, "mass.txt"), self.M)
-        np.savetxt( os.path.join(dic, "stiff.txt"), self.K)
-        np.savetxt( os.path.join(dic, "evals.txt"), self.evals)
-        np.savetxt( os.path.join(dic, "evecs.txt"), self.evecs)
+        print('[ DEBUG] The output dir is' + self.output_path)
+
+        np.savetxt( os.path.join(self.output_path, "mass.txt"), self.M)
+        np.savetxt( os.path.join(self.output_path, "stiff.txt"), self.K)
+        np.savetxt( os.path.join(self.output_path, "evals.txt"), self.evals)
+        np.savetxt( os.path.join(self.output_path, "evecs.txt"), self.evecs)
 
 
-ma_instance = ModalAnalysis('./model/cube.vtk', './material/material-0.cfg')
-ma_instance.printToFile('./output/output_material-0.txt')
-ma_instance.saveData('./output/cube-0')
+ma_instance = ModalAnalysis('./model/cube.vtk', './material/material-0.cfg', './output/cube-0')
+ma_instance.printToFile()
+ma_instance.saveData()
