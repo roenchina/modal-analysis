@@ -14,7 +14,7 @@ class SoundGenerator:
     # omegas
     # ksi
     # omega_ds
-    # valid map
+    # valid_map # 1 if the mode is valid
 
     def __init__(self, material_file, data_path, sampling_rate, duration) -> None:
         # read material
@@ -35,13 +35,32 @@ class SoundGenerator:
 
         self.calOmega()
 
-    def calOmega_d(self):
-        self.omegas = np.sqrt(self.evals)
-        self.ksi = (self.material['alpha'] + self.material['beta'] * self.evals) / 2 / self.omegas
-        # self.omega_ds = self.omegas * np.sqrt(1 -self.ksi * self.ksi )
-        # TODO
-        # 遍历omegas，如果omega<0 pass 如果1-ksi*ksi<0 或ksi为nan pass 如果omega_d小于20*2pi大于20000*2pi，pass
-        # valid map指示哪些omegas是有意义的
+    def calOmega(self):
+        self.omegas = np.zeros(len(self.evals))
+        self.valid_map = np.ones(len(self.evals))
+        self.ksi = np.zeros(len(self.evals))
+        self.omega_ds = np.zeros(len(self.evals))
+        # self.ksi = (self.material['alpha'] + self.material['beta'] * self.evals) / 2 / self.omegas
+
+        for i in range(len(self.evals)):
+            if (self.evals[i] < 0):
+                self.valid_map[i] = 0
+                print('evals < 0 at ', i)
+                continue
+            self.omegas[i] = np.sqrt(self.evals[i])
+            self.ksi[i] = (self.material['alpha'] + self.material['beta'] * self.evals[i]) / 2 / self.omegas[i]
+            scale = 1 - self.ksi[i] * self.ksi[i]
+            if (scale < 0 ):
+                self.valid_map[i] = 0
+                print('1 - ksi^2 < 0 at', i)
+                continue
+            self.omega_ds[i] = self.omegas[i] * np.sqrt(scale)
+        
+        # print(self.evals)
+        # print(self.omegas)
+        # print(self.omega_ds)
+        # print(self.ksi)
+        # print(self.valid_map)
         
 
 sg_instance = SoundGenerator('./material/material-0.cfg', './output/cube-0', 44100, 1.0)
