@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.linalg import *
-
+import os
+import time
 
 def getXYZ_list(point):
     # point: [0,0,0] list
@@ -197,20 +198,38 @@ class ModalAnalysis:
         self.evals, self.evecs = eigh(self.K, self.M)
         # omega = np.sqrt(evals)
 
-    def saveToFile(self, filepath):
+    def printToFile(self, filepath):
         f = open(filepath, 'wt')
+
         print("\n# of vtx", file=f)
         print(self.num_vtx, file=f)
+
         print("\nMass Matrix", file=f)
         print(self.M, file=f)
+
         print("\nStiffness Matrix", file=f)
         print(self.K, file=f)
+
         print("\nEigen values", file=f)
         print(self.evals, file=f)
+
         print("\nOmega", file=f)
         print(np.sqrt(self.evals), file=f)
+
         print("\nEigen vectors", file=f)
         print(self.evecs, file=f)
+    
+    def saveData(self, dic):
+        if( os.path.exists(dic) ):
+            dic = dic + '-' + str(int(time.time()))
+        os.mkdir(dic)
+
+        np.savetxt( os.path.join(dic, "mass.txt"), self.M)
+        np.savetxt( os.path.join(dic, "stiff.txt"), self.K)
+        np.savetxt( os.path.join(dic, "evals.txt"), self.evals)
+        np.savetxt( os.path.join(dic, "evecs.txt"), self.evecs)
+
 
 ma_instance = ModalAnalysis('./model/cube.vtk', './material/material-0.cfg')
-ma_instance.saveToFile('./output/output_material-0.txt')
+ma_instance.printToFile('./output/output_material-0.txt')
+ma_instance.saveData('./output/cube-0')
