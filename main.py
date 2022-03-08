@@ -142,7 +142,7 @@ def getMeshInfo_vtk(filename):
 from configparser import ConfigParser
 from scipy.linalg import eigh
 class ModalAnalysis:
-    # vtk_filepath = "./cube.vtk"
+    # vtk_filepath = "./model/cube.vtk"
     # mesh_points = []
     # mesh_elements = []
     # num_vtx = 0
@@ -212,3 +212,5 @@ class ModalAnalysis:
         print("\nEigen vectors", file=f)
         print(self.evecs, file=f)
 
+ma_instance = ModalAnalysis('./model/cube.vtk', './material/material-0.cfg')
+ma_instance.saveToFile('./output_material-0.txt')
