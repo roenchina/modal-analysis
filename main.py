@@ -213,4 +213,4 @@ class ModalAnalysis:
         print(self.evecs, file=f)
 
 ma_instance = ModalAnalysis('./model/cube.vtk', './material/material-0.cfg')
-ma_instance.saveToFile('./output_material-0.txt')
+ma_instance.saveToFile('./output/output_material-0.txt')
