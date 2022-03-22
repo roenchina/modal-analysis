@@ -18,9 +18,13 @@ class SoundGenerator:
     # valid_map # 1 if the mode is valid
     # samples
     # each_sample
+    # material_file
+    # matrix_path
 
     def __init__(self, material_file, matrix_path) -> None:
         # read material
+        self.material_file = material_file
+        self.matrix_path = matrix_path
         cp = ConfigParser()
         cp.read(material_file, 'utf-8')
         self.material = {}
@@ -90,6 +94,7 @@ class SoundGenerator:
                 # print('[ DEBUG] at mode', i, ' ======================')
                 amplitude = np.exp(time_slot * (-1) * self.ksi[i] * self.omegas[i]) * abs(Uf[i]) / self.omega_ds[i]
                 self.each_sample[i] = (np.sin(self.omega_ds[i] * time_slot ) * amplitude).astype(np.float32)
+                print('mode ', i, ' omega = ', self.omega_ds[i])
 
                 # TEST ##########################################
                 if (i > 10):
@@ -97,7 +102,7 @@ class SoundGenerator:
                 # print(self.omega_ds[i])
                 # print(amplitude)
                 # print(sample_i)
-        print(self.samples)
+        # print(self.samples)
 
     def playSound(self):
         p = pyaudio.PyAudio()
@@ -110,12 +115,14 @@ class SoundGenerator:
         stream.close()
         p.terminate()
 
-    def saveSound(self, filename):
+    def saveSound(self):
         # TEST *1E6 ######################################
+        filename = os.path.join(self.matrix_path, 'res_sound.wav')
         tmp_samples = self.samples * 1e6
         write(filename, self.fs, tmp_samples)
 
-    def saveEachMode(self, path):
+    def saveEachMode(self):
+        path = os.path.join(self.matrix_path, 'modes')
         if( not os.path.exists(path) ):
             os.mkdir(path)
         for i in range(len(self.evals)):
@@ -127,14 +134,14 @@ class SoundGenerator:
 
 
 
-sg_instance = SoundGenerator('./material/material-0.cfg', './output/cube-0')
+sg_instance = SoundGenerator('./material/material-0.cfg', './output/cube-0-fix0123')
 sg_instance.setDuration(3.0)
 sg_instance.setSampRate(44100)
 
 force = np.zeros(sg_instance.getEigenLen())
 # force = (0.5, 0.1, 0) applied at point 9
-force[24] = 0.5
-force[25] = 0.1
+force[12] = 0.5
+force[13] = 0.1
 # force[26] = 0
 
 sg_instance.setForce(force)
@@ -142,5 +149,5 @@ sg_instance.setForce(force)
 sg_instance.genSound()
 
 # sg_instance.playSound()
-sg_instance.saveSound('./output/cube-0/res_sound.wav')
-sg_instance.saveEachMode('./output/cube-0/modes/')
+sg_instance.saveSound()
+sg_instance.saveEachMode()
