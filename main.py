@@ -163,27 +163,26 @@ class ModalAnalysis:
     # fixed_vtx = []
 
     def __init__(self, vtk_file, fixed_vtx, material_file, output_path) -> None:
+        print("[ INFO] init")
         if( os.path.exists(output_path) ):
             output_path = output_path + '-' + str(int(time.time()))
         self.output_path = output_path
 
         self.vtk_filepath = vtk_file
         self.fixed_vtx = fixed_vtx
+        print("[ INFO] Getting mesh info...")
         self.mesh_points, self.mesh_elements = getMeshInfo_vtk(self.vtk_filepath)
         self.num_vtx = len(self.mesh_points)
 
+        print("[ INFO] Reading material file")
         cp = ConfigParser()
         cp.read(material_file, 'utf-8')
         self.material = {}
         for key in cp['DEFAULT']:
             self.material[key] = float(cp['DEFAULT'][key])
-        # test begins ###
-        # for key in self.material:
-        #     print(self.material[key])
-        # test ends #####
-        
-        self.constructMK()
-        self.eignDecom()
+
+        # self.constructMK()
+        # self.eignDecom()
 
     def setFixedVtx(self, new_fv):
         self.fixed_vtx = new_fv
@@ -193,14 +192,26 @@ class ModalAnalysis:
         K_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
 
         m = getElementMass()
-        for i, ele_pts_idx in enumerate(self.mesh_elements):
+        for ele, ele_pts_idx in enumerate(self.mesh_elements):
             ele_pts_pos = [self.mesh_points[ele_pts_idx[p]] for p in range(4)]
             volume = abs(getSignedTetVolume(ele_pts_pos))
-            M_i = element2Global(m * self.material['density'] * volume, self.num_vtx, ele_pts_idx)
+
+            m_i = m * self.material['density'] * volume
+            # M_i = element2Global(m_i, self.num_vtx, ele_pts_idx)
             k_i = getElementStiffness(ele_pts_pos, self.material['youngs'], self.material['poisson'])
-            K_i = element2Global(k_i, self.num_vtx, ele_pts_idx)
-            M_ori += M_i
-            K_ori += K_i
+            # K_i = element2Global(k_i, self.num_vtx, ele_pts_idx)
+            # M_ori += M_i
+            # K_ori += K_i
+            
+            for i in range(4):
+                for j in range(4):
+                    for k in range(3):
+                        for l in range(3):
+                            I = ele_pts_idx[i]
+                            J = ele_pts_idx[j]
+                            M_ori[3*I+k][3*J+l] += m_i[3*i+k][3*j+l]
+                            K_ori[3*I+k][3*J+l] += k_i[3*i+k][3*j+l]
+
 
         remove_index = []
         for i in self.fixed_vtx:
@@ -257,7 +268,12 @@ class ModalAnalysis:
 
 
 # ma_instance = ModalAnalysis('./model/cube.vtk', [0, 1, 2, 3], './material/material-0.cfg', './output/cube-0-fix0123')
-fixed_vtx = [i for i in range(100)]
-ma_instance = ModalAnalysis('./data_process/plate.vtk', fixed_vtx, './material/material-1.cfg', './output/plate-fix100')
-ma_instance.printToFile()
+fixed_vtx = []
+# fixed_vtx = [i for i in range(2)]
+ma_instance = ModalAnalysis('./data_process/r02.vtk', fixed_vtx, './material/material-1.cfg', './output/r02')
+print("[ INFO] Constructing MK...")
+ma_instance.constructMK()
+print("[ INFO] Eigen Decomposition...")
+ma_instance.eignDecom()
+# ma_instance.printToFile()
 ma_instance.saveData()
