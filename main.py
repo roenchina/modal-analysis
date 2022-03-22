@@ -76,8 +76,8 @@ def getBMatrix(beta_list, gamma_list, delta_list):
     return B
 
 
-def getDMatrix(young, poisson):
-    q_ = young / (1 + poisson) / (1 - 2 * poisson)
+def getDMatrix(youngs, poisson):
+    q_ = youngs / (1 + poisson) / (1 - 2 * poisson)
     r_ = 1 - poisson
     s_ = (1 - 2 * poisson) / 2
     D1 = np.array([[r_, poisson, poisson],
@@ -98,11 +98,11 @@ def getDMatrix(young, poisson):
     return D
 
 
-def getElementStiffness(ele_points, young, poisson):
+def getElementStiffness(ele_points, youngs, poisson):
     beta_list, gamma_list, delta_list = getBetaGammaDelta(ele_points)
     volumn = abs(getSignedTetVolume(ele_points))
     B = getBMatrix(beta_list, gamma_list, delta_list)
-    D = getDMatrix(young, poisson)
+    D = getDMatrix(youngs, poisson)
     k = B.T.dot(D).dot(B) * volumn
     return k
 
@@ -151,7 +151,7 @@ class ModalAnalysis:
     # mesh_elements = []
     # num_vtx = 0
     # material
-    #   young
+    #   youngs
     #   poisson
     #   density
     #   alpha
@@ -197,7 +197,7 @@ class ModalAnalysis:
             ele_pts_pos = [self.mesh_points[ele_pts_idx[p]] for p in range(4)]
             volume = abs(getSignedTetVolume(ele_pts_pos))
             M_i = element2Global(m * self.material['density'] * volume, self.num_vtx, ele_pts_idx)
-            k_i = getElementStiffness(ele_pts_pos, self.material['young'], self.material['poisson'])
+            k_i = getElementStiffness(ele_pts_pos, self.material['youngs'], self.material['poisson'])
             K_i = element2Global(k_i, self.num_vtx, ele_pts_idx)
             M_ori += M_i
             K_ori += K_i
@@ -256,6 +256,8 @@ class ModalAnalysis:
         np.savetxt( os.path.join(self.output_path, "evecs.txt"), self.evecs)
 
 
-ma_instance = ModalAnalysis('./model/cube.vtk', [0, 1, 2, 3], './material/material-0.cfg', './output/cube-0-fix0123')
+# ma_instance = ModalAnalysis('./model/cube.vtk', [0, 1, 2, 3], './material/material-0.cfg', './output/cube-0-fix0123')
+fixed_vtx = [i for i in range(100)]
+ma_instance = ModalAnalysis('./data_process/plate.vtk', fixed_vtx, './material/material-1.cfg', './output/plate-fix100')
 ma_instance.printToFile()
 ma_instance.saveData()
