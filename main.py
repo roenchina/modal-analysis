@@ -144,6 +144,7 @@ def getMeshInfo_vtk(filename):
 
 from configparser import ConfigParser
 from scipy.linalg import eigh
+
 class ModalAnalysis:
     # vtk_filepath = "./model/cube.vtk"
     # mesh_points = []
@@ -159,14 +160,15 @@ class ModalAnalysis:
     # K
     # evals
     # evecs
+    # fixed_vtx = []
 
-    def __init__(self, vtk_file, material_file, output_path) -> None:
+    def __init__(self, vtk_file, fixed_vtx, material_file, output_path) -> None:
         if( os.path.exists(output_path) ):
             output_path = output_path + '-' + str(int(time.time()))
         self.output_path = output_path
 
-
         self.vtk_filepath = vtk_file
+        self.fixed_vtx = fixed_vtx
         self.mesh_points, self.mesh_elements = getMeshInfo_vtk(self.vtk_filepath)
         self.num_vtx = len(self.mesh_points)
 
@@ -176,12 +178,15 @@ class ModalAnalysis:
         for key in cp['DEFAULT']:
             self.material[key] = float(cp['DEFAULT'][key])
         # test begins ###
-        for key in self.material:
-            print(self.material[key])
+        # for key in self.material:
+        #     print(self.material[key])
         # test ends #####
         
         self.constructMK()
         self.eignDecom()
+
+    def setFixedVtx(self, new_fv):
+        self.fixed_vtx = new_fv
 
     def constructMK(self):
         M_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
@@ -197,8 +202,16 @@ class ModalAnalysis:
             M_ori += M_i
             K_ori += K_i
 
-        self.M = M_ori
-        self.K = K_ori
+        remove_index = []
+        for i in self.fixed_vtx:
+            remove_index.append(3*i)
+            remove_index.append(3*i + 1)
+            remove_index.append(3*i + 2)
+
+        self.M = np.delete(M_ori, remove_index, axis=0)
+        self.M = np.delete(self.M, remove_index, axis=1)
+        self.K = np.delete(K_ori, remove_index, axis=0)
+        self.K = np.delete(self.K, remove_index, axis=1)
 
     def eignDecom(self):
         # generalized eigenvalue decomposition
@@ -209,7 +222,7 @@ class ModalAnalysis:
         if( not os.path.exists(self.output_path) ):
             os.mkdir(self.output_path)
         
-        print('[ DEBUG] The output dir is ' + self.output_path)
+        print('[ DEBUG] printToFile The output dir is ' + self.output_path)
 
         f = open(os.path.join(self.output_path, "print.txt"), 'wt')
 
@@ -235,7 +248,7 @@ class ModalAnalysis:
         if( not os.path.exists(self.output_path) ):
             os.mkdir(self.output_path)
 
-        print('[ DEBUG] The output dir is' + self.output_path)
+        print('[ DEBUG] save Data The output dir is' + self.output_path)
 
         np.savetxt( os.path.join(self.output_path, "mass.txt"), self.M)
         np.savetxt( os.path.join(self.output_path, "stiff.txt"), self.K)
@@ -243,6 +256,6 @@ class ModalAnalysis:
         np.savetxt( os.path.join(self.output_path, "evecs.txt"), self.evecs)
 
 
-ma_instance = ModalAnalysis('./model/cube.vtk', './material/material-0.cfg', './output/cube-0')
+ma_instance = ModalAnalysis('./model/cube.vtk', [0, 1, 2, 3], './material/material-0.cfg', './output/cube-0-fix0123')
 ma_instance.printToFile()
 ma_instance.saveData()
