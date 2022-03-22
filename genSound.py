@@ -52,7 +52,7 @@ class SoundGenerator:
                 continue
             self.omegas[i] = np.sqrt(self.evals[i])
 
-            # TEST exchange alpha and beta ############################
+            # TEST exchange alpha and beta ( which is correct by ModalModel.cpp line 98)############################
             self.ksi[i] = (self.material['beta'] + self.material['alpha'] * self.evals[i]) / 2 / self.omegas[i]
             scale = 1 - self.ksi[i] * self.ksi[i]
             if (scale < 0 ):
