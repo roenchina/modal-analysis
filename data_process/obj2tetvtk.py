@@ -1,4 +1,7 @@
 import meshio
+import argparse, os
+
+
 def readObj(path):
     print("[ INFO] Reading obj mesh", path)
     obj_mesh = meshio.read(path)
@@ -25,10 +28,14 @@ def writeTetVtk(points, facets, opath):
     # print("Elements:")
     # for i, t in enumerate(tet_mesh.elements):
     #     print (i, t)
-    print("[ INFO] write vtk to local", opath)
-
+    print("[ INFO] writing vtk to:", opath)
     tet_mesh.write_vtk(opath)
 
-obj_points, obj_facets = readObj("plate.obj")
 
-writeTetVtk(obj_points, obj_facets, "plate.vtk")
+parser = argparse.ArgumentParser()
+parser.add_argument('-i', '--input', type=str, default='./r01.obj', help='Input file path [default: \'./r01.obj\']')
+parser.add_argument('-o', '--output', type=str, default='./ro1.vtk', help='Output file path [default: \'./r01.vtk\']')
+FLAGS = parser.parse_args()
+
+obj_points, obj_facets = readObj(FLAGS.input)
+writeTetVtk(obj_points, obj_facets, FLAGS.output)
