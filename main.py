@@ -1,8 +1,9 @@
 from cmath import pi
+import mailbox
 from msilib.schema import Directory
 import numpy as np
 from numpy.linalg import *
-import os
+import argparse, os
 import time
 
 def getXYZ_list(point):
@@ -103,9 +104,43 @@ def getElementStiffness(ele_points, youngs, poisson):
     volumn = abs(getSignedTetVolume(ele_points))
     B = getBMatrix(beta_list, gamma_list, delta_list)
     D = getDMatrix(youngs, poisson)
-    k = B.T.dot(D).dot(B) * volumn
-    return k
+    stiff = B.T.dot(D).dot(B) * volumn
+    return stiff
 
+
+def getElementStiffness2(ele_points, youngs, poisson):
+    lambda_ = youngs * poisson / (1 + poisson) / (1 - 2 * poisson)
+    mu_ = youngs * 0.5 / (1 + poisson) 
+
+    stiff = np.zeros((12, 12))
+    mb = np.zeros((4, 4))
+    for i in range(4):
+        mb[0][i] = ele_points[i][0]
+        mb[1][i] = ele_points[i][1]
+        mb[2][i] = ele_points[i][2]
+        mb[3][i] = 1
+    
+    print("[ DEBUG] mb:")
+    print(mb)
+    beta_ = np.linalg.inv(mb)
+
+    for i in range(4):
+        for j in range(4):
+            for a in range(3):
+                for b in range(3):
+                    I = i*3 + a
+                    J = j*3 + b
+                    # O'brien
+                    stiff[I][J] = lambda_ * beta_[i][a] * beta_[j][b]
+                    # ZCX ModalSound/src/deformable/linear.cpp line 37
+                    # stiff[I][J] = (lambda_ * beta_[i][a] * beta_[j][b] + mu_ * beta_[i][b] * beta_[j][a])
+                    if ( a == b ):
+                        sum = 0
+                        for k in range(3):
+                            sum += beta_[i][k] * beta_[j][k]
+                        stiff[I][J] += mu_ * sum
+                    stiff[I][J] *= 0.5 * abs(getSignedTetVolume(ele_points))
+    return stiff
 
 # mass: mass of the tet
 def getElementMass():
@@ -198,7 +233,7 @@ class ModalAnalysis:
 
             m_i = m * self.material['density'] * volume
             # M_i = element2Global(m_i, self.num_vtx, ele_pts_idx)
-            k_i = getElementStiffness(ele_pts_pos, self.material['youngs'], self.material['poisson'])
+            k_i = getElementStiffness2(ele_pts_pos, self.material['youngs'], self.material['poisson'])
             # K_i = element2Global(k_i, self.num_vtx, ele_pts_idx)
             # M_ori += M_i
             # K_ori += K_i
@@ -207,10 +242,16 @@ class ModalAnalysis:
                 for j in range(4):
                     for k in range(3):
                         for l in range(3):
+                            # if element==0 continue
                             I = ele_pts_idx[i]
                             J = ele_pts_idx[j]
                             M_ori[3*I+k][3*J+l] += m_i[3*i+k][3*j+l]
+                            # zcx said it should be subed but i dont know why
+                            # let's just give it a try
                             K_ori[3*I+k][3*J+l] += k_i[3*i+k][3*j+l]
+
+            if(ele % 50 == 0):
+                print("at element ", ele)
 
 
         remove_index = []
@@ -255,25 +296,50 @@ class ModalAnalysis:
         # print("\nEigen vectors", file=f)
         # print(self.evecs, file=f)
     
-    def saveData(self):
+    def saveAllData(self):
         if( not os.path.exists(self.output_path) ):
             os.mkdir(self.output_path)
 
-        print('[ DEBUG] save Data The output dir is' + self.output_path)
+        print('[ INFO] save Data The output dir is' + self.output_path)
 
         np.savetxt( os.path.join(self.output_path, "mass.txt"), self.M)
         np.savetxt( os.path.join(self.output_path, "stiff.txt"), self.K)
         np.savetxt( os.path.join(self.output_path, "evals.txt"), self.evals)
         np.savetxt( os.path.join(self.output_path, "evecs.txt"), self.evecs)
 
+    def saveM(self):
+        if( not os.path.exists(self.output_path) ):
+            os.mkdir(self.output_path)
+        print('[ INFO] saving Mass matrix to' + self.output_path)
+        np.savetxt( os.path.join(self.output_path, "mass.txt"), self.M)
+        print('[ INFO] done')
+
+    def saveK(self):
+        if( not os.path.exists(self.output_path) ):
+            os.mkdir(self.output_path)
+        print('[ INFO] saving Stiff matrix to' + self.output_path)
+        np.savetxt( os.path.join(self.output_path, "stiff.txt"), self.K)
+        print('[ INFO] done')
+
+    def saveEvals(self):
+        if( not os.path.exists(self.output_path) ):
+            os.mkdir(self.output_path)
+        print('[ INFO] saving Eigen Values to' + self.output_path)
+        np.savetxt( os.path.join(self.output_path, "evals.txt"), self.evals)
+        print('[ INFO] done')
 
 # ma_instance = ModalAnalysis('./model/cube.vtk', [0, 1, 2, 3], './material/material-0.cfg', './output/cube-0-fix0123')
 fixed_vtx = []
-# fixed_vtx = [i for i in range(2)]
-ma_instance = ModalAnalysis('./data_process/r02.vtk', fixed_vtx, './material/material-1.cfg', './output/r02')
+# fixed_vtx = [i for i in range(10)]
+ma_instance = ModalAnalysis('./data_process/r01.vtk', fixed_vtx, './material/material-1.cfg', './output/r01-obrien')
 print("[ INFO] Constructing MK...")
 ma_instance.constructMK()
-print("[ INFO] Eigen Decomposition...")
-ma_instance.eignDecom()
-# ma_instance.printToFile()
-ma_instance.saveData()
+ma_instance.saveM()
+ma_instance.saveK()
+
+# print("[ INFO] Eigen Decomposition...")
+# ma_instance.eignDecom()
+# ma_instance.saveEvals()
+# print("[ INFO] Congrats! Eigen Decomposition done.")
+# # ma_instance.printToFile()
+# ma_instance.saveAllData()
