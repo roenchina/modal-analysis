@@ -8,6 +8,10 @@ import time
 from configparser import ConfigParser
 from scipy.linalg import eigh
 
+import pyaudio
+from scipy.io.wavfile import write
+
+
 def getSignedTetVolume(ele_points):
     point0 = np.resize(ele_points[0], (3, 1))
     point1 = np.resize(ele_points[1], (3, 1))
@@ -92,7 +96,7 @@ class ModalAnalysis:
             output_path = output_path + '-' + str(int(time.time()))
         self.output_path = output_path
         if( not os.path.exists(self.output_path) ):
-            os.mkdir(self.output_path)
+            os.makedirs(self.output_path)
 
     def setFixedVtx(self, new_fv):
         self.fixed_vtx = new_fv
@@ -146,7 +150,7 @@ class ModalAnalysis:
         self.M_fix = np.delete(self.M_fix, self.remove_index, axis=1)
 
     def getK_fix(self):
-        self.K_fix = np.delete(self.M_ori, self.remove_index, axis=0)
+        self.K_fix = np.delete(self.K_ori, self.remove_index, axis=0)
         self.K_fix = np.delete(self.K_fix, self.remove_index, axis=1)
 
 
@@ -188,6 +192,86 @@ class ModalAnalysis:
         np.savetxt( os.path.join(self.output_path, "evals.txt"), self.evals)
         print('[ INFO] done')
 
+#### Sound Part ###############################################
+    # omegas
+    # ksi
+    # omega_ds
+    # valid_map # 1 if the mode is valid
+    # samples
+    # mode_samples
+
+    def calOmega(self):
+        self.omegas = np.zeros(len(self.evals))
+        self.valid_map = np.ones(len(self.evals))
+        self.ksi = np.zeros(len(self.evals))
+        self.omega_ds = np.zeros(len(self.evals))
+
+        for i in range(len(self.evals)):
+            if (self.evals[i] < 0):
+                self.valid_map[i] = 0
+                print('evals < 0 at ', i)
+                continue
+            self.omegas[i] = np.sqrt(self.evals[i])
+
+            self.ksi[i] = (self.material['beta'] + self.material['alpha'] * self.evals[i]) / 2 / self.omegas[i]
+            scale = 1 - self.ksi[i] * self.ksi[i]
+            if (scale < 0 ):
+                self.valid_map[i] = 0
+                print('1 - ksi^2 < 0 at', i)
+                continue
+            self.omega_ds[i] = self.omegas[i] * np.sqrt(scale)
+
+    def setDuration(self, duration):
+        self.duration = duration
+
+    def setSampRate(self, sampling_rate):
+        self.fs = sampling_rate
+
+    def setForce(self, force):
+        self.force = force
+    
+    def setForce(self, contact_idx, f_x, f_y, f_z):
+        force = np.zeros(len(self.evals))
+        force[3*contact_idx] = f_x
+        force[3*contact_idx+1] = f_y
+        force[3*contact_idx+2] = f_z
+        self.force = force
+
+    def genSound(self):
+        self.calOmega()
+
+        time_slot = np.arange(self.fs * self.duration) / self.fs
+
+        self.mode_sample = np.zeros((len(self.evals), len(time_slot)))
+        self.samples = np.zeros(len(time_slot))
+
+        Uf = np.dot(self.evecs.transpose(), self.force)
+
+        for i in range(len(self.valid_map)):
+            if(self.valid_map[i]):
+
+                amplitude = np.exp(time_slot * (-1) * self.ksi[i] * self.omegas[i]) * abs(Uf[i]) / self.omega_ds[i]
+                self.mode_sample[i] = (np.sin(self.omega_ds[i] * time_slot ) * amplitude).astype(np.float32)
+                print('mode ', i, ' omega_d = ', self.omega_ds[i])
+
+                if (self.omega_ds[i] > 3500 and self.omega_ds[i] < 4e10):
+                    self.samples += self.mode_sample[i]
+                else:
+                    print('mode ', i, 'is out of 20hz 20000hz range')
+
+    def saveSound(self):
+        filename = os.path.join(self.output_path, 'res_sound.wav')
+        tmp_samples = self.samples * 1e6
+        write(filename, self.fs, tmp_samples)
+
+    def saveEachMode(self):
+        path = os.path.join(self.output_path, 'modes')
+        if( not os.path.exists(path) ):
+            os.mkdir(path)
+        for i in range(len(self.evals)):
+            if (self.valid_map[i]):
+                tmp_samples = self.mode_sample[i] * 1e6
+                write(os.path.join(path, 'mode'+str(i)+'.wav'), self.fs, tmp_samples)
 
 # ./main.py -m 1 -ip './model/r02.vtk' -op './output/r02' -fn 3
 # parser = argparse.ArgumentParser()
