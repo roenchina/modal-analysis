@@ -197,14 +197,13 @@ class ModalAnalysis:
     # evecs
     # fixed_vtx = []
 
-    def __init__(self, vtk_file, fixed_vtx, material_file, output_path) -> None:
+    def __init__(self, vtk_file, material_file, output_path) -> None:
         print("[ INFO] init")
         if( os.path.exists(output_path) ):
             output_path = output_path + '-' + str(int(time.time()))
         self.output_path = output_path
 
         self.vtk_filepath = vtk_file
-        self.fixed_vtx = fixed_vtx
         print("[ INFO] Getting mesh info...")
         self.mesh_points, self.mesh_elements = getMeshInfo_vtk(self.vtk_filepath)
         self.num_vtx = len(self.mesh_points)
@@ -216,13 +215,11 @@ class ModalAnalysis:
         for key in cp['DEFAULT']:
             self.material[key] = float(cp['DEFAULT'][key])
 
-        # self.constructMK()
-        # self.eignDecom()
 
     def setFixedVtx(self, new_fv):
         self.fixed_vtx = new_fv
 
-    def constructMK(self):
+    def constructMK_ori(self):
         M_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
         K_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
 
@@ -253,21 +250,26 @@ class ModalAnalysis:
             if(ele % 50 == 0):
                 print("at element ", ele)
 
+        self.M_ori = M_ori
+        self.K_ori = K_ori
+        self.M_fix = M_ori
+        self.K_fix = K_ori
 
+    def rmFixed(self):
         remove_index = []
         for i in self.fixed_vtx:
             remove_index.append(3*i)
             remove_index.append(3*i + 1)
             remove_index.append(3*i + 2)
 
-        self.M = np.delete(M_ori, remove_index, axis=0)
-        self.M = np.delete(self.M, remove_index, axis=1)
-        self.K = np.delete(K_ori, remove_index, axis=0)
-        self.K = np.delete(self.K, remove_index, axis=1)
+        self.M_fix = np.delete(self.M_ori, remove_index, axis=0)
+        self.M_fix = np.delete(self.M_fix, remove_index, axis=1)
+        self.K_fix = np.delete(self.M_ori, remove_index, axis=0)
+        self.K_fix = np.delete(self.K_fix, remove_index, axis=1)
 
     def eignDecom(self):
         # generalized eigenvalue decomposition
-        self.evals, self.evecs = eigh(self.K, self.M)
+        self.evals, self.evecs = eigh(self.K_ori, self.M_ori)
         # omega = np.sqrt(evals)
 
     def printToFile(self):
@@ -293,8 +295,6 @@ class ModalAnalysis:
         print("\nfreq", file=f)
         print(np.sqrt(self.evals) / 2 / pi, file=f)
 
-        # print("\nEigen vectors", file=f)
-        # print(self.evecs, file=f)
     
     def saveAllData(self):
         if( not os.path.exists(self.output_path) ):
@@ -302,23 +302,26 @@ class ModalAnalysis:
 
         print('[ INFO] The output dir is' + self.output_path)
 
-        np.savetxt( os.path.join(self.output_path, "mass.txt"), self.M)
-        np.savetxt( os.path.join(self.output_path, "stiff.txt"), self.K)
+        # np.savetxt( os.path.join(self.output_path, "mass_ori.txt"), self.M_ori)
+        # np.savetxt( os.path.join(self.output_path, "stiff_ori.txt"), self.K_ori)
+        np.savetxt( os.path.join(self.output_path, "mass_fix.txt"), self.M_fix)
+        np.savetxt( os.path.join(self.output_path, "stiff_fix.txt"), self.K_fix)
+
         np.savetxt( os.path.join(self.output_path, "evals.txt"), self.evals)
         np.savetxt( os.path.join(self.output_path, "evecs.txt"), self.evecs)
 
-    def saveM(self):
+    def saveM_ori(self):
         if( not os.path.exists(self.output_path) ):
             os.mkdir(self.output_path)
         print('[ INFO] saving Mass matrix to' + self.output_path)
-        np.savetxt( os.path.join(self.output_path, "mass.txt"), self.M)
+        np.savetxt( os.path.join(self.output_path, "mass_ori.txt"), self.M_ori)
         print('[ INFO] done')
 
-    def saveK(self):
+    def saveK_ori(self):
         if( not os.path.exists(self.output_path) ):
             os.mkdir(self.output_path)
         print('[ INFO] saving Stiff matrix to' + self.output_path)
-        np.savetxt( os.path.join(self.output_path, "stiff.txt"), self.K)
+        np.savetxt( os.path.join(self.output_path, "stiff_ori.txt"), self.K_ori)
         print('[ INFO] done')
 
     def saveEvals(self):
@@ -329,10 +332,10 @@ class ModalAnalysis:
         print('[ INFO] done')
 
 
-# ./main.py -m 1 -ip './data_process/r02.vtk' -op './output/r02' -fn 3
+# ./main.py -m 1 -ip './model/r02.vtk' -op './output/r02' -fn 3
 parser = argparse.ArgumentParser()
 parser.add_argument('-m', '--material', type=int, default=1, help='Material Num 0-7 [default: 1]')
-parser.add_argument('-ip', '--inputpath', type=str, default='./data_process/r01.vtk', help='Input path')
+parser.add_argument('-ip', '--inputpath', type=str, default='./model/r01.vtk', help='Input path')
 parser.add_argument('-op', '--outputpath', type=str, default='./output/r01', help='Output path')
 parser.add_argument('-fn', '--fixednum', type=int, default=5, help='# of fixed vertices [default: 5]')
 
@@ -343,10 +346,13 @@ material_path = './material/material-{}.cfg'.format(FLAGS.material)
 fixed_vtx = [i for i in range(FLAGS.fixednum)]
 
 
-ma_instance = ModalAnalysis(FLAGS.inputpath, fixed_vtx, material_path, FLAGS.outputpath)
+ma_instance = ModalAnalysis(FLAGS.inputpath, material_path, FLAGS.outputpath)
 
 print("[ INFO] Constructing MK...")
-ma_instance.constructMK()
+ma_instance.constructMK_ori()
+
+ma_instance.setFixedVtx(fixed_vtx)
+# ma_instance.rmFixed()
 
 print("[ INFO] Eigen decomposition...")
 ma_instance.eignDecom()
