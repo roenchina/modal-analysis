@@ -5,47 +5,8 @@ import numpy as np
 from numpy.linalg import *
 import argparse, os
 import time
-
-def getXYZ_list(point):
-    # point: [0,0,0] list
-    x = point[0]
-    y = point[1]
-    z = point[2]
-    return x, y, z
-
-
-def calDet6(a2, a3, b2, b3, c2, c3):
-    mat = np.array([[1, a2, a3], [1, b2, b3], [1, c2, c3]])
-    return det(mat)
-
-
-def getBetaGammaDelta(ele_points):
-    x1, y1, z1 = getXYZ_list(ele_points[0])
-    x2, y2, z2 = getXYZ_list(ele_points[1])
-    x3, y3, z3 = getXYZ_list(ele_points[2])
-    x4, y4, z4 = getXYZ_list(ele_points[3])
-
-    beta_list = [0, 0, 0, 0]
-    gamma_list = [0, 0, 0, 0]
-    delta_list = [0, 0, 0, 0]
-
-    beta_list[0] = -calDet6(y2, z2, y3, z3, y4, z4)
-    beta_list[1] =  calDet6(y1, z1, y3, z3, y4, z4)
-    beta_list[2] = -calDet6(y1, z1, y2, z2, y4, z4)
-    beta_list[3] =  calDet6(y1, z1, y2, z2, y3, z3)
-
-    gamma_list[0] =  calDet6(x2, z2, x3, z3, x4, z4)
-    gamma_list[1] = -calDet6(x1, z1, x3, z3, x4, z4)
-    gamma_list[2] =  calDet6(x1, z1, x2, z2, x4, z4)
-    gamma_list[3] = -calDet6(x1, z1, x2, z2, x3, z3)
-
-    delta_list[0] = -calDet6(x2, y2, x3, y3, x4, y4)
-    delta_list[1] =  calDet6(x1, y1, x3, y3, x4, y4)
-    delta_list[2] = -calDet6(x1, y1, x2, y2, x4, y4)
-    delta_list[3] =  calDet6(x1, y1, x2, y2, x3, y3)
-
-    return beta_list, gamma_list, delta_list
-
+from configparser import ConfigParser
+from scipy.linalg import eigh
 
 def getSignedTetVolume(ele_points):
     point0 = np.resize(ele_points[0], (3, 1))
@@ -57,61 +18,9 @@ def getSignedTetVolume(ele_points):
     return volume
 
 
-def getBSubMatrix(beta, gamma, delta):
-    b1 = np.array([beta, 0, 0])
-    b2 = np.array([0, gamma, 0])
-    b3 = np.array([0, 0, delta])
-    b4 = np.array([gamma, beta, 0])
-    b5 = np.array([0, delta, gamma])
-    b6 = np.array([delta, 0, beta])
-    b = np.array([b1, b2, b3, b4, b5, b6])
-    return b
-
-
-def getBMatrix(beta_list, gamma_list, delta_list):
-    B0 = getBSubMatrix(beta_list[0], gamma_list[0], delta_list[0])
-    B1 = getBSubMatrix(beta_list[1], gamma_list[1], delta_list[1])
-    B2 = getBSubMatrix(beta_list[2], gamma_list[2], delta_list[2])
-    B3 = getBSubMatrix(beta_list[3], gamma_list[3], delta_list[3])
-    B = np.hstack((B0, B1, B2, B3))
-    return B
-
-
-def getDMatrix(youngs, poisson):
-    q_ = youngs / (1 + poisson) / (1 - 2 * poisson)
-    r_ = 1 - poisson
-    s_ = (1 - 2 * poisson) / 2
-    D1 = np.array([[r_, poisson, poisson],
-                   [poisson, r_, poisson],
-                   [poisson, poisson, r_],
-                   [0, 0, 0],
-                   [0, 0, 0],
-                   [0, 0, 0]])
-    I63 = np.array([[0, 0, 0],
-                    [0, 0, 0],
-                    [0, 0, 0],
-                    [1, 0, 0],
-                    [0, 1, 0],
-                    [0, 0, 1]])
-    D2 = s_ * I63
-    D = np.hstack((D1, D2))
-    D = D * q_
-    return D
-
-
 def getElementStiffness(ele_points, youngs, poisson):
-    beta_list, gamma_list, delta_list = getBetaGammaDelta(ele_points)
-    volumn = abs(getSignedTetVolume(ele_points))
-    B = getBMatrix(beta_list, gamma_list, delta_list)
-    D = getDMatrix(youngs, poisson)
-    stiff = B.T.dot(D).dot(B) * volumn
-    return stiff
-
-
-def getElementStiffness2(ele_points, youngs, poisson):
     lambda_ = youngs * poisson / (1 + poisson) / (1 - 2 * poisson)
     mu_ = youngs * 0.5 / (1 + poisson) 
-
     stiff = np.zeros((12, 12))
     mb = np.zeros((4, 4))
     for i in range(4):
@@ -119,20 +28,14 @@ def getElementStiffness2(ele_points, youngs, poisson):
         mb[1][i] = ele_points[i][1]
         mb[2][i] = ele_points[i][2]
         mb[3][i] = 1
-    
-    # print("[ DEBUG] mb:")
-    # print(mb)
     beta_ = np.linalg.inv(mb)
-
     for i in range(4):
         for j in range(4):
             for a in range(3):
                 for b in range(3):
                     I = i*3 + a
                     J = j*3 + b
-                    # O'brien
                     stiff[I][J] = lambda_ * beta_[i][a] * beta_[j][b]
-                    # ZCX ModalSound/src/deformable/linear.cpp line 37
                     # stiff[I][J] = (lambda_ * beta_[i][a] * beta_[j][b] + mu_ * beta_[i][b] * beta_[j][a])
                     if ( a == b ):
                         sum = 0
@@ -142,33 +45,6 @@ def getElementStiffness2(ele_points, youngs, poisson):
                     stiff[I][J] *= 0.5 * abs(getSignedTetVolume(ele_points))
     return stiff
 
-# mass: mass of the tet
-def getElementMass():
-    m = np.zeros((12, 12))
-    I3 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-    for i in range(4):
-        for j in range(4):
-            if i == j:
-                m[3*i:3*i+3, 3*j:3*j+3] = 2 * I3
-            else:
-                m[3*i:3*i+3, 3*j:3*j+3] = I3
-    m = m / 20
-    return m
-
-
-# matrix: 12*12 expand to global size
-# idx: the global index of vertices in the element matrix
-def element2Global(matrix, n_vtx, idx):
-    M = np.zeros((3 * n_vtx, 3 * n_vtx))
-    for i in range(4):
-        for j in range(4):
-            for k in range(3):
-                for l in range(3):
-                    I = idx[i]
-                    J = idx[j]
-                    M[3*I+k][3*J+l] = matrix[3*i+k][3*j+l]
-    return M
-
 
 def getMeshInfo_vtk(filename):
     import meshio
@@ -177,8 +53,6 @@ def getMeshInfo_vtk(filename):
     mesh_elements = mesh.cells[0].data.tolist()
     return mesh_points, mesh_elements
 
-from configparser import ConfigParser
-from scipy.linalg import eigh
 
 class ModalAnalysis:
     # vtk_filepath = "./model/cube.vtk"
@@ -197,167 +71,156 @@ class ModalAnalysis:
     # evecs
     # fixed_vtx = []
 
-    def __init__(self, vtk_file, material_file, output_path) -> None:
-        print("[ INFO] init")
-        if( os.path.exists(output_path) ):
-            output_path = output_path + '-' + str(int(time.time()))
-        self.output_path = output_path
-
+    def __init__(self, vtk_file) -> None:
+        print("[ INFO] Reading mesh info...")
         self.vtk_filepath = vtk_file
-        print("[ INFO] Getting mesh info...")
         self.mesh_points, self.mesh_elements = getMeshInfo_vtk(self.vtk_filepath)
         self.num_vtx = len(self.mesh_points)
+        print('[ INFO] done')
 
-        print("[ INFO] Reading material file")
+    def setMaterial(self, material_file):
+        print("[ INFO] Reading material file...")
         cp = ConfigParser()
         cp.read(material_file, 'utf-8')
         self.material = {}
         for key in cp['DEFAULT']:
             self.material[key] = float(cp['DEFAULT'][key])
+        print('[ INFO] done')
 
+    def setOutputPath(self, output_path):
+        if( os.path.exists(output_path) ):
+            output_path = output_path + '-' + str(int(time.time()))
+        self.output_path = output_path
+        if( not os.path.exists(self.output_path) ):
+            os.mkdir(self.output_path)
 
     def setFixedVtx(self, new_fv):
         self.fixed_vtx = new_fv
+        self.remove_index = []
+        for i in self.fixed_vtx:
+            self.remove_index.append(3*i)
+            self.remove_index.append(3*i + 1)
+            self.remove_index.append(3*i + 2)
 
-    def constructMK_ori(self):
+
+    def constructM_ori(self):
+        print("[ INFO] Generating M ori matrix...")
         M_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
-        K_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
-
-        m = getElementMass()
         for ele, ele_pts_idx in enumerate(self.mesh_elements):
             ele_pts_pos = [self.mesh_points[ele_pts_idx[p]] for p in range(4)]
             volume = abs(getSignedTetVolume(ele_pts_pos))
+            for i in range(4):
+                for j in range(4):
+                    for k in range(3):
+                        I = ele_pts_idx[i]
+                        J = ele_pts_idx[j]
+                        M_ori[3*I+k][3*J+k] += 0.05 * self.material['density'] * volume * ( 1 + (i == j))
 
-            m_i = m * self.material['density'] * volume
-            # M_i = element2Global(m_i, self.num_vtx, ele_pts_idx)
-            k_i = getElementStiffness2(ele_pts_pos, self.material['youngs'], self.material['poisson'])
-            # K_i = element2Global(k_i, self.num_vtx, ele_pts_idx)
-            # M_ori += M_i
-            # K_ori += K_i
-            
+            if(ele % 50 == 0):
+                print("at element ", ele)
+        self.M_ori = M_ori
+        self.M_fix = M_ori
+        print('[ INFO] done')
+
+    def constructK_ori(self):
+        print("[ INFO] Generating K ori matrix...")
+        K_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
+        for ele, ele_pts_idx in enumerate(self.mesh_elements):
+            ele_pts_pos = [self.mesh_points[ele_pts_idx[p]] for p in range(4)]
+            k_i = getElementStiffness(ele_pts_pos, self.material['youngs'], self.material['poisson'])
             for i in range(4):
                 for j in range(4):
                     for k in range(3):
                         for l in range(3):
-                            # if element==0 continue
                             I = ele_pts_idx[i]
                             J = ele_pts_idx[j]
-                            M_ori[3*I+k][3*J+l] += m_i[3*i+k][3*j+l]
-                            # zcx said it should be subed but i dont know why
-                            # let's just give it a try
                             K_ori[3*I+k][3*J+l] += k_i[3*i+k][3*j+l]
-
             if(ele % 50 == 0):
                 print("at element ", ele)
-
-        self.M_ori = M_ori
         self.K_ori = K_ori
-        self.M_fix = M_ori
         self.K_fix = K_ori
+        print('[ INFO] done')
 
-    def rmFixed(self):
-        remove_index = []
-        for i in self.fixed_vtx:
-            remove_index.append(3*i)
-            remove_index.append(3*i + 1)
-            remove_index.append(3*i + 2)
+    def getM_fix(self):
+        self.M_fix = np.delete(self.M_ori, self.remove_index, axis=0)
+        self.M_fix = np.delete(self.M_fix, self.remove_index, axis=1)
 
-        self.M_fix = np.delete(self.M_ori, remove_index, axis=0)
-        self.M_fix = np.delete(self.M_fix, remove_index, axis=1)
-        self.K_fix = np.delete(self.M_ori, remove_index, axis=0)
-        self.K_fix = np.delete(self.K_fix, remove_index, axis=1)
+    def getK_fix(self):
+        self.K_fix = np.delete(self.M_ori, self.remove_index, axis=0)
+        self.K_fix = np.delete(self.K_fix, self.remove_index, axis=1)
+
 
     def eignDecom(self):
-        # generalized eigenvalue decomposition
-        self.evals, self.evecs = eigh(self.K_ori, self.M_ori)
-        # omega = np.sqrt(evals)
-
-    def printToFile(self):
-        if( not os.path.exists(self.output_path) ):
-            os.mkdir(self.output_path)
-        
-        print('[ DEBUG] printToFile The output dir is ' + self.output_path)
-
-        f = open(os.path.join(self.output_path, "print.txt"), 'wt')
-
-        print("\n# of vtx", file=f)
-        print(self.num_vtx, file=f)
-
-        # print("\nMass Matrix", file=f)
-        # print(self.M, file=f)
-
-        # print("\nStiffness Matrix", file=f)
-        # print(self.K, file=f)
-
-        # print("\nEigen values", file=f)
-        # print(self.evals, file=f)
-
-        print("\nfreq", file=f)
-        print(np.sqrt(self.evals) / 2 / pi, file=f)
+        self.evals, self.evecs = eigh(self.K_fix, self.M_fix)
 
     
     def saveAllData(self):
-        if( not os.path.exists(self.output_path) ):
-            os.mkdir(self.output_path)
+        # if( not os.path.exists(self.output_path) ):
+        #     os.mkdir(self.output_path)
 
         print('[ INFO] The output dir is' + self.output_path)
 
-        # np.savetxt( os.path.join(self.output_path, "mass_ori.txt"), self.M_ori)
-        # np.savetxt( os.path.join(self.output_path, "stiff_ori.txt"), self.K_ori)
+        np.savetxt( os.path.join(self.output_path, "mass_ori.txt"), self.M_ori)
+        np.savetxt( os.path.join(self.output_path, "stiff_ori.txt"), self.K_ori)
         np.savetxt( os.path.join(self.output_path, "mass_fix.txt"), self.M_fix)
         np.savetxt( os.path.join(self.output_path, "stiff_fix.txt"), self.K_fix)
-
         np.savetxt( os.path.join(self.output_path, "evals.txt"), self.evals)
         np.savetxt( os.path.join(self.output_path, "evecs.txt"), self.evecs)
 
     def saveM_ori(self):
-        if( not os.path.exists(self.output_path) ):
-            os.mkdir(self.output_path)
+        # if( not os.path.exists(self.output_path) ):
+        #     os.mkdir(self.output_path)
         print('[ INFO] saving Mass matrix to' + self.output_path)
         np.savetxt( os.path.join(self.output_path, "mass_ori.txt"), self.M_ori)
         print('[ INFO] done')
 
     def saveK_ori(self):
-        if( not os.path.exists(self.output_path) ):
-            os.mkdir(self.output_path)
+        # if( not os.path.exists(self.output_path) ):
+        #     os.mkdir(self.output_path)
         print('[ INFO] saving Stiff matrix to' + self.output_path)
         np.savetxt( os.path.join(self.output_path, "stiff_ori.txt"), self.K_ori)
         print('[ INFO] done')
 
     def saveEvals(self):
-        if( not os.path.exists(self.output_path) ):
-            os.mkdir(self.output_path)
+        # if( not os.path.exists(self.output_path) ):
+        #     os.mkdir(self.output_path)
         print('[ INFO] saving Eigen Values to' + self.output_path)
         np.savetxt( os.path.join(self.output_path, "evals.txt"), self.evals)
         print('[ INFO] done')
 
 
 # ./main.py -m 1 -ip './model/r02.vtk' -op './output/r02' -fn 3
-parser = argparse.ArgumentParser()
-parser.add_argument('-m', '--material', type=int, default=1, help='Material Num 0-7 [default: 1]')
-parser.add_argument('-ip', '--inputpath', type=str, default='./model/r01.vtk', help='Input path')
-parser.add_argument('-op', '--outputpath', type=str, default='./output/r01', help='Output path')
-parser.add_argument('-fn', '--fixednum', type=int, default=5, help='# of fixed vertices [default: 5]')
+# parser = argparse.ArgumentParser()
+# parser.add_argument('-m', '--material', type=int, default=1, help='Material Num 0-7 [default: 1]')
+# parser.add_argument('-ip', '--inputpath', type=str, default='./model/r01.vtk', help='Input path')
+# parser.add_argument('-op', '--outputpath', type=str, default='./output/r01', help='Output path')
+# parser.add_argument('-fn', '--fixednum', type=int, default=5, help='# of fixed vertices [default: 5]')
 
 
-FLAGS = parser.parse_args()
+# FLAGS = parser.parse_args()
 
-material_path = './material/material-{}.cfg'.format(FLAGS.material)
-fixed_vtx = [i for i in range(FLAGS.fixednum)]
+# material_path = './material/material-{}.cfg'.format(FLAGS.material)
+# fixed_vtx = [i for i in range(FLAGS.fixednum)]
 
 
-ma_instance = ModalAnalysis(FLAGS.inputpath, material_path, FLAGS.outputpath)
+# ma_instance = ModalAnalysis(FLAGS.inputpath)
+# ma_instance.setMaterial(material_path)
+# ma_instance.setOutputPath(FLAGS.outputpath)
 
-print("[ INFO] Constructing MK...")
-ma_instance.constructMK_ori()
+# print("[ INFO] Constructing MK...")
+# ma_instance.constructM_ori()
+# ma_instance.saveM_ori()
 
-ma_instance.setFixedVtx(fixed_vtx)
-# ma_instance.rmFixed()
+# ma_instance.constructK_ori()
 
-print("[ INFO] Eigen decomposition...")
-ma_instance.eignDecom()
+# ma_instance.setFixedVtx(fixed_vtx)
+# ma_instance.getM_fix()
+# ma_instance.getK_fix()
 
-print("[ INFO] Saving data...")
-ma_instance.saveAllData()
+# # print("[ INFO] Eigen decomposition...")
+# # ma_instance.eignDecom()
 
-print("[ INFO] All completed.")
+# # print("[ INFO] Saving data...")
+# # ma_instance.saveAllData()
+
+# print("[ INFO] All completed.")
