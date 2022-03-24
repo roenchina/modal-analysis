@@ -1,0 +1,454 @@
+(modaldemo) PS D:\MyDocuments\ZJUstudy\516\Sound\modal-analysis> python
+Python 3.7.7 (default, May  6 2020, 11:45:54) [MSC v.1916 64 bit (AMD64)] :: Anaconda, Inc. on win32
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from ModalAnalysis import *      
+>>> ins = ModalAnalysis('./model/plate-nt.vtk')
+[ INFO] Reading mesh info...
+[ INFO] done
+>>> ins.setMaterial('./material/material-0.cfg')
+[ INFO] Reading material file...
+[ INFO] done
+>>> ins.setOutputPath('./output/plate-nt-test/')
+>>> new_fv = [i for i in range(10)]   
+>>> ins.setFixedVtx(new_fv)
+>>> ins.constructM_ori()
+[ INFO] Generating M ori matrix...
+at element  0
+at element  50
+at element  100
+at element  150
+at element  200
+at element  250
+at element  300
+[ INFO] done
+>>> ins.constructK_ori()
+[ INFO] Generating K ori matrix...
+at element  0
+at element  50
+at element  100
+at element  150
+at element  200
+at element  250
+at element  300
+[ INFO] done
+>>> ins.getM_fix()
+>>> ins.getK_fix()
+>>> ins.eignDecom()
+>>> ins.saveAllData()
+[ INFO] The output dir is./output/plate-nt-test/-1648113175
+>>> ins.setFixedVtx([])     
+>>> ins.getM_fix()
+>>> ins.getK_fix()
+>>> ins.eignDecom()
+>>> ins.saveAllData()
+[ INFO] The output dir is./output/plate-nt-test/-1648113175
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "D:\MyDocuments\ZJUstudy\516\Sound\modal-analysis\ModalAnalysis.py", line 167, in saveAllData
+    np.savetxt( os.path.join(self.output_path, 
+"mass_ori.txt"), self.M_ori)
+  File "<__array_function__ internals>", line 6, in savetxt
+  File "C:\Users\15179\.conda\envs\modaldemo\lib\site-packages\numpy\lib\npyio.py", line 1368, in savetxt
+    open(fname, 'wt').close()
+FileNotFoundError: [Errno 2] No such file or directory: './output/plate-nt-test/-1648113175\\mass_ori.txt'
+>>> ins.setOutputPath('./output/plate-nt-test')
+>>> ins.saveAllData()
+[ INFO] The output dir is./output/plate-nt-test-1648113377
+>>> ins.calOmega()
+evals < 0 at  0
+evals < 0 at  1
+1 - ksi^2 < 0 at 2
+>>> ins.setDuration(2.0)
+>>> ins.setSampRate(44100)
+>>> ins.setForce(10, 0.5, 0.1, 0.2)
+>>> ins.force[0:40]
+array([0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. ,
+       0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. ,
+       0. , 0. , 0. , 0. , 0.5, 0.1, 0.2, 0. , 0. , 0. , 0. , 0. , 0. ,
+       0. ])
+>>> ins.genSound()
+evals < 0 at  0
+evals < 0 at  1
+1 - ksi^2 < 0 at 2
+mode  3  omega_d =  12681.185767325906
+mode  4  omega_d =  12683.268733504345
+mode  5  omega_d =  12691.000727576586
+mode  6  omega_d =  12798.74059218185 
+mode  7  omega_d =  12803.314669362238
+mode  8  omega_d =  16504.352732198447 
+mode  9  omega_d =  21318.895581871733 
+mode  10  omega_d =  21424.151650307213
+mode  11  omega_d =  21657.832991126004
+mode  12  omega_d =  21684.67848434929 
+mode  13  omega_d =  23407.576939275936
+mode  14  omega_d =  23461.900247305763
+mode  15  omega_d =  27441.129954670967
+mode  16  omega_d =  29986.630655598492
+mode  17  omega_d =  30192.778932827452
+mode  18  omega_d =  30617.071772450796
+mode  19  omega_d =  30646.49516471442 
+mode  20  omega_d =  30932.96094585531 
+mode  21  omega_d =  30945.66777799802 
+mode  22  omega_d =  33169.202698307934
+mode  23  omega_d =  33236.908504850115
+mode  24  omega_d =  38710.74978288956
+mode  25  omega_d =  39366.20893794876
+mode  26  omega_d =  39571.22806770392
+mode  27  omega_d =  39749.44530225083
+mode  28  omega_d =  39960.89148530274
+mode  29  omega_d =  40008.72866571893
+mode  30  omega_d =  40226.00698861113
+mode  31  omega_d =  43117.18891157994
+mode  32  omega_d =  43498.2067650522
+mode  33  omega_d =  44100.76295008713
+mode  34  omega_d =  44297.24962982622
+mode  35  omega_d =  47320.113624999045
+mode  36  omega_d =  48386.34228966503
+mode  37  omega_d =  48728.050752078736
+mode  38  omega_d =  49781.96630592049
+mode  39  omega_d =  50209.80217824057
+mode  40  omega_d =  51650.54818164355
+mode  41  omega_d =  52804.960381907
+mode  42  omega_d =  53311.28484670832
+mode  43  omega_d =  53517.024225634
+mode  44  omega_d =  53755.72222581842
+mode  45  omega_d =  54373.3961443638
+mode  46  omega_d =  55077.31041922095
+mode  47  omega_d =  57430.6653540863
+mode  48  omega_d =  57812.59916051762
+mode  49  omega_d =  57867.71315697241
+mode  50  omega_d =  59170.98255795099
+mode  51  omega_d =  60141.416049513435
+mode  52  omega_d =  60814.54641826654
+mode  53  omega_d =  63428.275705439446
+mode  54  omega_d =  63636.53451339473
+mode  55  omega_d =  64403.920506031915
+mode  56  omega_d =  64476.95861122937
+mode  57  omega_d =  65254.62587116999
+mode  58  omega_d =  65674.09913940565
+mode  59  omega_d =  67004.89125628347
+mode  60  omega_d =  67584.74706254253
+mode  61  omega_d =  68321.15863590482
+mode  62  omega_d =  68749.41386240422
+mode  63  omega_d =  69985.45197771733
+mode  64  omega_d =  70361.88636244916
+mode  65  omega_d =  70815.02604627835
+mode  66  omega_d =  70974.8955532641
+mode  67  omega_d =  71800.37937934042
+mode  68  omega_d =  71901.3571342228
+mode  69  omega_d =  72650.23260886906
+mode  70  omega_d =  76185.18211810637
+mode  71  omega_d =  76513.66601258189
+mode  72  omega_d =  77099.39470965014
+mode  73  omega_d =  78771.03781819962
+mode  74  omega_d =  79025.96080146809
+mode  75  omega_d =  79749.06413131805
+mode  76  omega_d =  80084.91240333414
+mode  77  omega_d =  80657.58654454796
+mode  78  omega_d =  81044.20313365164
+mode  79  omega_d =  81228.06567433794
+mode  80  omega_d =  81812.89737640746
+mode  81  omega_d =  83030.41591346145
+mode  82  omega_d =  83187.79001168061
+mode  83  omega_d =  83877.37555817366
+mode  84  omega_d =  84046.67726872939
+mode  85  omega_d =  84464.65054547718
+mode  86  omega_d =  85918.81857185073
+mode  87  omega_d =  87465.33952432568
+mode  88  omega_d =  88052.06839244609
+mode  89  omega_d =  88399.22243742444
+mode  90  omega_d =  88720.6393072564
+mode  91  omega_d =  90307.2436965335
+mode  92  omega_d =  90925.65900271083
+mode  93  omega_d =  91246.15281910358
+mode  94  omega_d =  92839.47715358777
+mode  95  omega_d =  93766.17480852775
+mode  96  omega_d =  94773.68443973949
+mode  97  omega_d =  95684.88672994562
+mode  98  omega_d =  96237.31746126791
+mode  99  omega_d =  97101.64693377796
+mode  100  omega_d =  97516.53034187377
+mode  101  omega_d =  98011.49405921728
+mode  102  omega_d =  98340.72829734792
+mode  103  omega_d =  99315.97242912679
+mode  104  omega_d =  100702.37447751786
+mode  105  omega_d =  101417.7772335877
+mode  106  omega_d =  102035.48564935694
+mode  107  omega_d =  102532.6511401658
+mode  108  omega_d =  102968.75956283875
+mode  109  omega_d =  103496.12343949181
+mode  110  omega_d =  103682.17631601935
+mode  111  omega_d =  104080.11846010717
+mode  112  omega_d =  104871.14929290219
+mode  113  omega_d =  105435.63114279934
+mode  114  omega_d =  107239.26954493938
+mode  115  omega_d =  107815.82444126718
+mode  116  omega_d =  108009.85172751099
+mode  117  omega_d =  108351.4293009105
+mode  118  omega_d =  108638.85906977204
+mode  119  omega_d =  110959.87951920956
+mode  120  omega_d =  111102.48537560503
+mode  121  omega_d =  111939.59592407796
+mode  122  omega_d =  112527.15762974716
+mode  123  omega_d =  113118.66883068312
+mode  124  omega_d =  113966.87517393791
+mode  125  omega_d =  114418.10292445082
+mode  126  omega_d =  115035.57231222089
+mode  127  omega_d =  116509.13059001407
+mode  128  omega_d =  116825.61852530521
+mode  129  omega_d =  117955.7855584418
+mode  130  omega_d =  118458.17902525335
+mode  131  omega_d =  118832.60831042616
+mode  132  omega_d =  119180.53760849191
+mode  133  omega_d =  119966.00932719669
+mode  134  omega_d =  120489.79358798232
+mode  135  omega_d =  121279.67200864536
+mode  136  omega_d =  121784.4511872761
+mode  137  omega_d =  122662.68669177279
+mode  138  omega_d =  122755.37946309963
+mode  139  omega_d =  123406.24187144253
+mode  140  omega_d =  124273.67728388458
+mode  141  omega_d =  124712.96836238493
+mode  142  omega_d =  125420.56517854676
+mode  143  omega_d =  125829.3447496445
+mode  144  omega_d =  126058.59315642311
+mode  145  omega_d =  127639.05276402099
+mode  146  omega_d =  128280.09898440272
+mode  147  omega_d =  129968.7906765956
+mode  148  omega_d =  130575.57552638477
+mode  149  omega_d =  131782.70830780372
+mode  150  omega_d =  132252.27390085053
+mode  151  omega_d =  132466.7148419179
+mode  152  omega_d =  132625.23292464513
+mode  153  omega_d =  134216.7126537321
+mode  154  omega_d =  134445.33147117702
+mode  155  omega_d =  135584.49239277
+mode  156  omega_d =  136158.14256456975
+mode  157  omega_d =  137506.2684249195
+mode  158  omega_d =  138537.0011528607
+mode  159  omega_d =  139518.17335551057
+mode  160  omega_d =  141436.05733316886
+mode  161  omega_d =  143009.8351043349
+mode  162  omega_d =  143314.33348939387
+mode  163  omega_d =  143351.988963386
+mode  164  omega_d =  143934.40150934766
+mode  165  omega_d =  144219.88647787098
+mode  166  omega_d =  146156.54113952728
+mode  167  omega_d =  146462.10954002946
+mode  168  omega_d =  146518.55746373534
+mode  169  omega_d =  147133.21389740813
+mode  170  omega_d =  147559.62351741505
+mode  171  omega_d =  147709.40972530082
+mode  172  omega_d =  149420.0261692626
+mode  173  omega_d =  150384.5750146792
+mode  174  omega_d =  151366.3091832032
+mode  175  omega_d =  151655.30452757506
+mode  176  omega_d =  152185.7218146565
+mode  177  omega_d =  152488.65508745902
+mode  178  omega_d =  152726.65635194926
+mode  179  omega_d =  153722.14970289063
+mode  180  omega_d =  154210.7442160868
+mode  181  omega_d =  154476.87574854997
+mode  182  omega_d =  155703.9659753705
+mode  183  omega_d =  156490.45726818143
+mode  184  omega_d =  157149.76151942057
+mode  185  omega_d =  157556.12696794537
+mode  186  omega_d =  158001.92646511988
+mode  187  omega_d =  158905.77484445152
+mode  188  omega_d =  159686.00637008576
+mode  189  omega_d =  159883.4512730315
+mode  190  omega_d =  160304.33500636948
+mode  191  omega_d =  161649.61175239133
+mode  192  omega_d =  162049.82781357403
+mode  193  omega_d =  163196.01348307938
+mode  194  omega_d =  163659.58240467386
+mode  195  omega_d =  164299.0069709017
+mode  196  omega_d =  164722.55702505598
+mode  197  omega_d =  166185.37341735404
+mode  198  omega_d =  167598.6749930927
+mode  199  omega_d =  168010.42402919833
+mode  200  omega_d =  168285.63479418558
+mode  201  omega_d =  168928.20056543787
+mode  202  omega_d =  169571.78599395178
+mode  203  omega_d =  170873.39119592923
+mode  204  omega_d =  171689.8183320624
+mode  205  omega_d =  172286.42396059286
+mode  206  omega_d =  172610.7788678571
+mode  207  omega_d =  173514.89741414165
+mode  208  omega_d =  174093.28848564505
+mode  209  omega_d =  174437.31292282487
+mode  210  omega_d =  175092.46028570808
+mode  211  omega_d =  175693.13555075735
+mode  212  omega_d =  176069.34843171714
+mode  213  omega_d =  177330.5523522025
+mode  214  omega_d =  177744.36601725756
+mode  215  omega_d =  178387.9013450007
+mode  216  omega_d =  179906.89750066667
+mode  217  omega_d =  180656.7822373437
+mode  218  omega_d =  181207.18682655742
+mode  219  omega_d =  182528.03230431126
+mode  220  omega_d =  182858.72199412796
+mode  221  omega_d =  183031.19212735118
+mode  222  omega_d =  183559.39880562827
+mode  223  omega_d =  183762.0788487936
+mode  224  omega_d =  184924.27599502736
+mode  225  omega_d =  185320.16944991308
+mode  226  omega_d =  185445.07852711866
+mode  227  omega_d =  186257.05095498095
+mode  228  omega_d =  186864.17705858944
+mode  229  omega_d =  187793.83597615565
+mode  230  omega_d =  188001.0785727993
+mode  231  omega_d =  188945.4517238358
+mode  232  omega_d =  189505.86191622977
+mode  233  omega_d =  189702.38074029115
+mode  234  omega_d =  190454.0514725775
+mode  235  omega_d =  190868.5755850586
+mode  236  omega_d =  191090.37521523665
+mode  237  omega_d =  191670.75701732805
+mode  238  omega_d =  192665.8680987456
+mode  239  omega_d =  192988.8399891286
+mode  240  omega_d =  193595.1543228406
+mode  241  omega_d =  193775.84861607678
+mode  242  omega_d =  194395.5352513261
+mode  243  omega_d =  195106.3872358707
+mode  244  omega_d =  195381.49319975704
+mode  245  omega_d =  195505.4453557495
+mode  246  omega_d =  196097.7539038703
+mode  247  omega_d =  196404.1702294428
+mode  248  omega_d =  196770.52103944542
+mode  249  omega_d =  197559.42851750983
+mode  250  omega_d =  198802.2704953294
+mode  251  omega_d =  199310.55553478177
+mode  252  omega_d =  199655.02087223972
+mode  253  omega_d =  200053.61926866078
+mode  254  omega_d =  200533.22323290954
+mode  255  omega_d =  201056.9295920503
+mode  256  omega_d =  202130.65258483496
+mode  257  omega_d =  202785.82393947846
+mode  258  omega_d =  203490.47122813892
+mode  259  omega_d =  204598.7320776392
+mode  260  omega_d =  205171.1868186823
+mode  261  omega_d =  205513.01467089565
+mode  262  omega_d =  206365.6946296573
+mode  263  omega_d =  206604.7703341459
+mode  264  omega_d =  207347.23858738146
+mode  265  omega_d =  207660.9358450187
+mode  266  omega_d =  207954.28251268412
+mode  267  omega_d =  209008.57646073966
+mode  268  omega_d =  210618.08511929348
+mode  269  omega_d =  210949.89765928176
+mode  270  omega_d =  211500.71303297576
+mode  271  omega_d =  212772.8858674937
+mode  272  omega_d =  213275.63812930277
+mode  273  omega_d =  214100.9101164279
+mode  274  omega_d =  214554.19924467607
+mode  275  omega_d =  215257.60710286893
+mode  276  omega_d =  215628.47253885888
+mode  277  omega_d =  216032.0022625773
+mode  278  omega_d =  216816.58076082505
+mode  279  omega_d =  217422.6424056485
+mode  280  omega_d =  217534.6462163763
+mode  281  omega_d =  217788.27220005685
+mode  282  omega_d =  218167.62624492237
+mode  283  omega_d =  219238.61923325888
+mode  284  omega_d =  219836.83666648157
+mode  285  omega_d =  219957.15168536804
+mode  286  omega_d =  220962.53272770636
+mode  287  omega_d =  221680.18297976872
+mode  288  omega_d =  222913.44435979513
+mode  289  omega_d =  223764.93130817777
+mode  290  omega_d =  224217.3147732897
+mode  291  omega_d =  225962.4873053338
+mode  292  omega_d =  226804.0045827823
+mode  293  omega_d =  227561.48218039327
+mode  294  omega_d =  227677.01292093113
+mode  295  omega_d =  229172.5253038823
+mode  296  omega_d =  229269.8866429525
+mode  297  omega_d =  230461.70133620387
+mode  298  omega_d =  231388.8074899617
+mode  299  omega_d =  232017.5601212678
+mode  300  omega_d =  232482.40743749362
+mode  301  omega_d =  233842.27510720797
+mode  302  omega_d =  234266.1407294029
+mode  303  omega_d =  235375.07650439133
+mode  304  omega_d =  235661.09399521886
+mode  305  omega_d =  236210.09312398324
+mode  306  omega_d =  236595.03715588755
+mode  307  omega_d =  237145.00628413554
+mode  308  omega_d =  238504.40662063667
+mode  309  omega_d =  238917.35988888776
+mode  310  omega_d =  239270.11199373688
+mode  311  omega_d =  239621.62078596753
+mode  312  omega_d =  240449.65574552212
+mode  313  omega_d =  241429.15363933085
+mode  314  omega_d =  241805.7953031449
+mode  315  omega_d =  243445.92524580334
+mode  316  omega_d =  243730.38645298156
+mode  317  omega_d =  244840.55209734294
+mode  318  omega_d =  245395.44553924692
+mode  319  omega_d =  246634.9826553137
+mode  320  omega_d =  247193.68183509482
+mode  321  omega_d =  248804.9369785309
+mode  322  omega_d =  249470.66227301664
+mode  323  omega_d =  250100.70292399533
+mode  324  omega_d =  250759.50800871372
+mode  325  omega_d =  251487.30314791782
+mode  326  omega_d =  252064.86116113453
+mode  327  omega_d =  253081.62742418612
+mode  328  omega_d =  253382.12550768617
+mode  329  omega_d =  254920.2325032736
+mode  330  omega_d =  257786.94378987903
+mode  331  omega_d =  258545.42270254192
+mode  332  omega_d =  258998.5048293162
+mode  333  omega_d =  260167.86236950476
+mode  334  omega_d =  260274.74408886363
+mode  335  omega_d =  260852.11637797096
+mode  336  omega_d =  262138.24934550206
+mode  337  omega_d =  262422.8561802511
+mode  338  omega_d =  263824.31344808405
+mode  339  omega_d =  264164.3614589709
+mode  340  omega_d =  265889.59186834184
+mode  341  omega_d =  266289.5792415127
+mode  342  omega_d =  268061.12983022316
+mode  343  omega_d =  271020.25745221134
+mode  344  omega_d =  272235.1561414072
+mode  345  omega_d =  272544.76271460694
+mode  346  omega_d =  273026.5458343895
+mode  347  omega_d =  275118.16045079136
+mode  348  omega_d =  276074.60361914104
+mode  349  omega_d =  276382.9785711357
+mode  350  omega_d =  280118.49866413866
+mode  351  omega_d =  281861.48187071295
+mode  352  omega_d =  282642.7405909569
+mode  353  omega_d =  284241.7955724272
+mode  354  omega_d =  284446.2462619575
+mode  355  omega_d =  285176.9388510382
+mode  356  omega_d =  286823.6083791898
+mode  357  omega_d =  287882.3521749981
+mode  358  omega_d =  288114.7073358873
+mode  359  omega_d =  291014.5706742299
+mode  360  omega_d =  292220.1762477604
+mode  361  omega_d =  295573.40770334215
+mode  362  omega_d =  298836.82065367687
+mode  363  omega_d =  301325.25169659435
+mode  364  omega_d =  302316.8839440599
+mode  365  omega_d =  305894.5317046077
+mode  366  omega_d =  311181.054471513
+mode  367  omega_d =  311404.57854541525
+mode  368  omega_d =  313965.9919582917
+mode  369  omega_d =  314143.36356242525
+mode  370  omega_d =  317257.03579328855
+mode  371  omega_d =  318946.6767089153
+mode  372  omega_d =  326554.75134546816
+mode  373  omega_d =  327070.8622236098
+mode  374  omega_d =  330133.39037075714
+mode  375  omega_d =  330413.63100370637
+mode  376  omega_d =  337875.62358673813
+mode  377  omega_d =  341052.6388770015
+mode  378  omega_d =  341775.4642323687
+mode  379  omega_d =  342676.5742088585
+mode  380  omega_d =  350417.0878453096
+mode  381  omega_d =  351210.19690091506
+mode  382  omega_d =  359580.75076650386
+mode  383  omega_d =  364858.55093343736
+>>> ins.saveSound()

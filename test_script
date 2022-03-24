@@ -3,23 +3,24 @@ conda activate modeldemo
 python
 
 from ModalAnalysis import *
-ins = ModalAnalysis('./model/plate-nt.vtk')
-ins.setMaterial('./material/material-0.cfg')
-ins.setOutputPath('./output/plate-nt-test')
+ma_ins = ModalAnalysis()
+ma_ins.setVtkFile('./model/plate-nt.vtk')
+ma_ins.setMaterial('./material/material-0.cfg')
+ma_ins.setOutputPath('./output/plate-nt-test')
 new_fv = [i for i in range(10)]
-ins.setFixedVtx(new_fv)
+ma_ins.setFixedVtx(new_fv)
 
-ins.constructM_ori()
-ins.constructK_ori()
-ins.getM_fix()
-ins.getK_fix()
-ins.eignDecom()
-ins.saveAllData()
+ma_ins.constructM_ori()
+ma_ins.constructK_ori()
+ma_ins.getM_fix()
+ma_ins.getK_fix()
+ma_ins.eignDecom()
+ma_ins.saveAllData()
 
-ins.calOmega()
-ins.setDuration(1.0)
-ins.setSampRate(44100)
+ma_ins.setDuration(1.0)
+ma_ins.setSampRate(44100)
 
-ins.setForce(10, 0.5, 0.1, 0.2)
+ma_ins.setForce(10, 0.5, 0.1, 0.2)
 
-ins.genSound()
+# ma_ins.calOmega()
+ma_ins.genSound()
