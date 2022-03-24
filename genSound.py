@@ -1,7 +1,7 @@
 import pyaudio
 import numpy as np
 import math
-import os
+import argparse, os
 from configparser import ConfigParser
 from scipy.io.wavfile import write
 
@@ -94,11 +94,12 @@ class SoundGenerator:
                 # print('[ DEBUG] at mode', i, ' ======================')
                 amplitude = np.exp(time_slot * (-1) * self.ksi[i] * self.omegas[i]) * abs(Uf[i]) / self.omega_ds[i]
                 self.each_sample[i] = (np.sin(self.omega_ds[i] * time_slot ) * amplitude).astype(np.float32)
-                print('mode ', i, ' omega = ', self.omega_ds[i])
+                print('mode ', i, ' omega_d = ', self.omega_ds[i])
 
                 # TEST ##########################################
-                if (i > 10):
+                if (self.omega_ds[i] > 3500 and self.omega_ds[i] < 4e10):
                     self.samples += self.each_sample[i]
+                    print('mode ', i, 'is in 20hz 20000hz range')
                 # print(self.omega_ds[i])
                 # print(amplitude)
                 # print(sample_i)
@@ -132,17 +133,33 @@ class SoundGenerator:
                 write(os.path.join(path, 'mode'+str(i)+'.wav'), self.fs, tmp_samples)
 
 
+# ./genSound.py -m 1 -p ./output/plate-nt-zcx -d 3.1 -sr 44101 
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-m', '--material', type=int, default=1, help='Material Num 0-7 [default: 1]')
+parser.add_argument('-p', '--matrixpath', type=str, default='./output/plate-nt', help='The Matrix path (same as sound output path) [default: \'./output/plate-nt\']')
+parser.add_argument('-d', '--duration', type=float, default=2.0, help='Sound duration [default: 2.0]')
+parser.add_argument('-sr', '--samprate', type=int, default=44100, help='Sample rate (must be an integer) [default: 44100]')
+parser.add_argument('-cp', '--contactpoint', type=int, default=0, help='Contact point index [default: 0]')
+parser.add_argument('-f', '--force', type=float, default=[0,0.5,0.1], nargs=3, help='Force - 3d list [default: [0, 0.5, 0.1]]')
 
 
-sg_instance = SoundGenerator('./material/material-0.cfg', './output/cube-0-fix0123')
-sg_instance.setDuration(3.0)
-sg_instance.setSampRate(44100)
+FLAGS = parser.parse_args()
+
+material_path = './material/material-{}.cfg'.format(FLAGS.material)
+matrix_path = FLAGS.matrixpath
+# print(FLAGS)
+# print(material_path, matrix_path)
+
+sg_instance = SoundGenerator(material_path, matrix_path)
+sg_instance.setDuration(FLAGS.duration)
+sg_instance.setSampRate(FLAGS.samprate)
 
 force = np.zeros(sg_instance.getEigenLen())
-# force = (0.5, 0.1, 0) applied at point 9
-force[12] = 0.5
-force[13] = 0.1
-# force[26] = 0
+for i in range(3):
+    force[3*FLAGS.contactpoint + i] = FLAGS.force[i]
+
+# print(force)
 
 sg_instance.setForce(force)
 
