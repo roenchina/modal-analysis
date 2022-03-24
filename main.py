@@ -120,8 +120,8 @@ def getElementStiffness2(ele_points, youngs, poisson):
         mb[2][i] = ele_points[i][2]
         mb[3][i] = 1
     
-    print("[ DEBUG] mb:")
-    print(mb)
+    # print("[ DEBUG] mb:")
+    # print(mb)
     beta_ = np.linalg.inv(mb)
 
     for i in range(4):
@@ -300,7 +300,7 @@ class ModalAnalysis:
         if( not os.path.exists(self.output_path) ):
             os.mkdir(self.output_path)
 
-        print('[ INFO] save Data The output dir is' + self.output_path)
+        print('[ INFO] The output dir is' + self.output_path)
 
         np.savetxt( os.path.join(self.output_path, "mass.txt"), self.M)
         np.savetxt( os.path.join(self.output_path, "stiff.txt"), self.K)
@@ -328,18 +328,30 @@ class ModalAnalysis:
         np.savetxt( os.path.join(self.output_path, "evals.txt"), self.evals)
         print('[ INFO] done')
 
-# ma_instance = ModalAnalysis('./model/cube.vtk', [0, 1, 2, 3], './material/material-0.cfg', './output/cube-0-fix0123')
-fixed_vtx = []
-# fixed_vtx = [i for i in range(10)]
-ma_instance = ModalAnalysis('./data_process/r01.vtk', fixed_vtx, './material/material-1.cfg', './output/r01-obrien')
+
+# ./main.py -m 1 -ip './data_process/r02.vtk' -op './output/r02' -fn 3
+parser = argparse.ArgumentParser()
+parser.add_argument('-m', '--material', type=int, default=1, help='Material Num 0-7 [default: 1]')
+parser.add_argument('-ip', '--inputpath', type=str, default='./data_process/r01.vtk', help='Input path')
+parser.add_argument('-op', '--outputpath', type=str, default='./output/r01', help='Output path')
+parser.add_argument('-fn', '--fixednum', type=int, default=5, help='# of fixed vertices [default: 5]')
+
+
+FLAGS = parser.parse_args()
+
+material_path = './material/material-{}.cfg'.format(FLAGS.material)
+fixed_vtx = [i for i in range(FLAGS.fixednum)]
+
+
+ma_instance = ModalAnalysis(FLAGS.inputpath, fixed_vtx, material_path, FLAGS.outputpath)
+
 print("[ INFO] Constructing MK...")
 ma_instance.constructMK()
-ma_instance.saveM()
-ma_instance.saveK()
 
-# print("[ INFO] Eigen Decomposition...")
-# ma_instance.eignDecom()
-# ma_instance.saveEvals()
-# print("[ INFO] Congrats! Eigen Decomposition done.")
-# # ma_instance.printToFile()
-# ma_instance.saveAllData()
+print("[ INFO] Eigen decomposition...")
+ma_instance.eignDecom()
+
+print("[ INFO] Saving data...")
+ma_instance.saveAllData()
+
+print("[ INFO] All completed.")
