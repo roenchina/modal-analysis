@@ -75,7 +75,10 @@ class ModalAnalysis:
     # evecs
     # fixed_vtx = []
 
-    def __init__(self, vtk_file) -> None:
+    def __init__(self) -> None:
+        pass
+
+    def setVtkFile(self, vtk_file):
         print("[ INFO] Reading mesh info...")
         self.vtk_filepath = vtk_file
         self.mesh_points, self.mesh_elements = getMeshInfo_vtk(self.vtk_filepath)
@@ -272,6 +275,19 @@ class ModalAnalysis:
             if (self.valid_map[i]):
                 tmp_samples = self.mode_sample[i] * 1e6
                 write(os.path.join(path, 'mode'+str(i)+'.wav'), self.fs, tmp_samples)
+
+############# bugs ###############################
+    def playSound(self):
+        p = pyaudio.PyAudio()
+        stream = p.open(format=pyaudio.paFloat32,
+                        channels=1,
+                        rate=self.fs,
+                        output=True)
+        tmp_samples = self.samples * 1e6
+        stream.write(tmp_samples.tobytes())
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
 
 # ./main.py -m 1 -ip './model/r02.vtk' -op './output/r02' -fn 3
 # parser = argparse.ArgumentParser()
