@@ -1,0 +1,25 @@
+conda activate modeldemo
+
+python
+
+from ModalAnalysis import *
+ins = ModalAnalysis('./model/plate-nt.vtk')
+ins.setMaterial('./material/material-0.cfg')
+ins.setOutputPath('./output/plate-nt-test')
+new_fv = [i for i in range(10)]
+ins.setFixedVtx(new_fv)
+
+ins.constructM_ori()
+ins.constructK_ori()
+ins.getM_fix()
+ins.getK_fix()
+ins.eignDecom()
+ins.saveAllData()
+
+ins.calOmega()
+ins.setDuration(1.0)
+ins.setSampRate(44100)
+
+ins.setForce(10, 0.5, 0.1, 0.2)
+
+ins.genSound()
