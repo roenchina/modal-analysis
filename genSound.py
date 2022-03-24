@@ -32,8 +32,8 @@ class SoundGenerator:
             self.material[key] = float(cp['DEFAULT'][key])
 
         # read nessessary data
-        self.M = np.loadtxt( os.path.join(matrix_path, 'mass.txt'))
-        self.K = np.loadtxt( os.path.join(matrix_path, 'stiff.txt'))
+        self.M = np.loadtxt( os.path.join(matrix_path, 'mass_fix.txt'))
+        self.K = np.loadtxt( os.path.join(matrix_path, 'stiff_fix.txt'))
         self.evals = np.loadtxt( os.path.join(matrix_path, 'evals.txt'))
         self.evecs = np.loadtxt( os.path.join(matrix_path, 'evecs.txt'))
 
@@ -163,8 +163,10 @@ for i in range(3):
 
 sg_instance.setForce(force)
 
+print("[ INFO] Generating Modal Sound...")
 sg_instance.genSound()
 
 # sg_instance.playSound()
+print("[ INFO] Saving Sound Data...")
 sg_instance.saveSound()
 sg_instance.saveEachMode()
