@@ -1,0 +1,22 @@
+- main.py
+	- ModalAnalysis类
+	- 读取vtk
+	- 读取material参数
+	- 计算M_ori和K_ori
+	- 删除固定点得到M_fix，K_fix
+	- 调用eigh进行特征值分解
+	- M，K，evals，evecs保存到文件夹中
+
+- genSound.py
+	- SoundGenerator类
+	- 从文件中读取M，K，evals，evecs，material等数据
+	- 设定外力向量
+	- 计算U'f
+	- 遍历模态计算模态数据
+	- 保存每个模态声音
+	- 求和得到最终结果声音，保存
+
+- obj2btk.py
+	- 调用meshio读取obj数据 （也可读取off等）
+	- 调用meshpy对obj数据进行四面体网格化处理
+	- 保存tet数据为vtk
