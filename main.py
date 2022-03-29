@@ -1,5 +1,3 @@
-from email.policy import default
-from json.tool import main
 from tkinter import *
 from tkinter import messagebox
 from tkinter import filedialog
@@ -43,7 +41,7 @@ def generate_sound():
     print('[ INFO] force z: ', val_forcez.get())
 
     global ma_ins
-    ma_ins.setDuration(1.0)
+    ma_ins.setDuration(3.0)
     ma_ins.setSampRate(44100)
     ma_ins.setForce(int(val_cpoint.get()), float(val_forcex.get()), float(val_forcey.get()), float(val_forcez.get()))
     ma_ins.genSound()
@@ -64,8 +62,8 @@ def save_data():
     
 
 root = Tk()
-root.title('First Window')
-root.geometry('650x400')
+root.title('Modal Analysis demo')
+root.geometry('300x300')
 
 
 # num of fixed vertex
@@ -116,7 +114,8 @@ val_material.grid(column=1, row=3)
 def select_model():
     file_model = filedialog.askopenfilename(initialdir=os.path.dirname(__file__))
     if (file_model != ''):
-        lb_model.configure(text=file_model)
+        model_base = '.../' + os.path.basename(file_model)
+        lb_model.configure(text=model_base)
     global _file_model
     _file_model = file_model
 
@@ -130,7 +129,8 @@ lb_model.grid(column=1, row=4)
 def select_output():
     dir_output = filedialog.askdirectory(initialdir=os.path.dirname(__file__))
     if (dir_output != ''):
-        lb_output.configure(text=dir_output)
+        dir_base = '.../' + os.path.basename(dir_output)
+        lb_output.configure(text=dir_base)
     global _dir_output
     _dir_output = dir_output
 

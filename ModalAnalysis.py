@@ -1,9 +1,6 @@
-from cmath import pi
-import mailbox
-from msilib.schema import Directory
 import numpy as np
 from numpy.linalg import *
-import argparse, os
+import os
 import time
 from configparser import ConfigParser
 from scipy.linalg import eigh
@@ -95,8 +92,8 @@ class ModalAnalysis:
         print('[ INFO] done')
 
     def setOutputPath(self, output_path):
-        if( os.path.exists(output_path) ):
-            output_path = output_path + '-' + str(int(time.time()))
+        # if( os.path.exists(output_path) ):
+        #     output_path = output_path + '-' + str(int(time.time()))
         self.output_path = output_path
         if( not os.path.exists(self.output_path) ):
             os.makedirs(self.output_path)
@@ -278,16 +275,7 @@ class ModalAnalysis:
 
 ############# bugs ###############################
     def playSound(self):
-        p = pyaudio.PyAudio()
-        stream = p.open(format=pyaudio.paFloat32,
-                        channels=1,
-                        rate=self.fs,
-                        output=True)
-        tmp_samples = self.samples * 1e6
-        stream.write(tmp_samples.tobytes())
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
+        pass
 
 # ./main.py -m 1 -ip './model/r02.vtk' -op './output/r02' -fn 3
 # parser = argparse.ArgumentParser()
