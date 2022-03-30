@@ -1,5 +1,5 @@
-# ignore venv
 venv
 output
 modes
 archive/data
+__pycache__
