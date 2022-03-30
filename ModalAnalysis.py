@@ -157,6 +157,12 @@ class ModalAnalysis:
     def eignDecom(self):
         self.evals, self.evecs = eigh(self.K_fix, self.M_fix)
 
+        self.c_evals = self.evals                   # 压缩之后的特征值
+        # self.c_evecs = self.evecs                   # 压缩之后的特征向量
+        self.c_evecs_transpose = self.evecs.transpose()
+
+        self.num_modes = len(self.c_evals)          # 模态个数 = 特征值个数
+        self.len_evec = self.c_evecs_transpose.shape[1]       # 特征向量长度 = 关键点*3
     
     def saveAllData(self):
         # if( not os.path.exists(self.output_path) ):
@@ -192,6 +198,48 @@ class ModalAnalysis:
         np.savetxt( os.path.join(self.output_path, "evals.txt"), self.evals)
         print('[ INFO] done')
 
+#### Compact Mode ###############################################
+    def packModes(self, pack_n):
+        n_evlas = len(self.evals)
+
+        print('[ INFO] packing {} modes into {} modes'.format(n_evlas, pack_n))
+        
+        self.c_evals = np.zeros(pack_n)
+        self.c_evecs_transpose = np.zeros((pack_n, self.len_evec))
+        evecs_transpose = self.evecs.transpose()
+
+        modes_each_pack = n_evlas // pack_n
+        modes_left = n_evlas - modes_each_pack * pack_n
+        offset = modes_each_pack // 2
+
+        print('[ INFO] modes_each_pack = ', modes_each_pack)
+        print('[ INFO] modes_left = ', modes_left)
+        print('[ INFO] offset = ', offset)
+
+        # 单独取其中一个模态，不可行
+        # for i in range(pack_n):
+        #     idx = modes_each_pack * i + offset
+        #     self.c_evals[i] = self.evals[idx]
+        #     self.c_evecs_transpose[i] = evecs_transpose[idx]
+        #     print('new evals [{}] = old evals [{}]'.format(i, idx))
+
+        # 取组内平均值，不可行
+        # for i in range(pack_n):
+        #     tmp_evec = np.zeros(self.len_evec)
+        #     tmp_evals = 0
+        #     for offset in range(modes_each_pack):
+        #         idx = modes_each_pack * i + offset
+        #         tmp_evals += self.evals[idx]
+        #         tmp_evec += evecs_transpose[idx]
+        #     self.c_evals[i] = tmp_evals / modes_each_pack
+        #     self.c_evecs_transpose[i] = tmp_evec / modes_each_pack
+        #     print('new evals [{}] = average old evals [{}-{}]'.format(i, modes_each_pack*i, modes_each_pack*(i+1)-1))
+
+
+
+        self.num_modes = pack_n          # 模态个数 = 特征值个数
+        # self.len_evec = self.c_evecs_transpose.shape[1]       # 特征向量长度 = 关键点*3
+
 #### Sound Part ###############################################
     # omegas
     # ksi
@@ -201,25 +249,31 @@ class ModalAnalysis:
     # mode_samples
 
     def calOmega(self):
-        self.omegas = np.zeros(len(self.evals))
-        self.valid_map = np.ones(len(self.evals))
-        self.ksi = np.zeros(len(self.evals))
-        self.omega_ds = np.zeros(len(self.evals))
+        self.omegas = np.zeros(self.num_modes)
+        self.valid_map = np.ones(self.num_modes)
+        self.ksi = np.zeros(self.num_modes)
+        self.omega_ds = np.zeros(self.num_modes)
 
-        for i in range(len(self.evals)):
-            if (self.evals[i] < 0):
+        print('[ INFO] calculating omega of each mode...')
+        for i in range(self.num_modes):
+            if (self.c_evals[i] < 0):
                 self.valid_map[i] = 0
                 print('evals < 0 at ', i)
                 continue
-            self.omegas[i] = np.sqrt(self.evals[i])
+            self.omegas[i] = np.sqrt(self.c_evals[i])
 
-            self.ksi[i] = (self.material['beta'] + self.material['alpha'] * self.evals[i]) / 2 / self.omegas[i]
+            self.ksi[i] = (self.material['beta'] + self.material['alpha'] * self.c_evals[i]) / 2 / self.omegas[i]
             scale = 1 - self.ksi[i] * self.ksi[i]
             if (scale < 0 ):
                 self.valid_map[i] = 0
                 print('1 - ksi^2 < 0 at', i)
                 continue
             self.omega_ds[i] = self.omegas[i] * np.sqrt(scale)
+            if (self.omega_ds[i] > 600 and self.omega_ds[i] < 7e4):
+                pass
+            else:
+                print('mode ', i, 'is out of 20hz 20000hz range')
+                self.valid_map[i] = 0
 
     def setDuration(self, duration):
         self.duration = duration
@@ -231,7 +285,7 @@ class ModalAnalysis:
         self.force = force
     
     def setForce(self, contact_idx, f_x, f_y, f_z):
-        force = np.zeros(len(self.evals))
+        force = np.zeros(self.len_evec)
         force[3*contact_idx] = f_x
         force[3*contact_idx+1] = f_y
         force[3*contact_idx+2] = f_z
@@ -242,33 +296,58 @@ class ModalAnalysis:
 
         time_slot = np.arange(self.fs * self.duration) / self.fs
 
-        self.mode_sample = np.zeros((len(self.evals), len(time_slot)))
+        self.mode_sample = np.zeros((self.num_modes, len(time_slot)))
         self.samples = np.zeros(len(time_slot))
 
-        Uf = np.dot(self.evecs.transpose(), self.force)
+        Uf = np.dot(self.c_evecs_transpose, self.force)
 
+        print('[ INFO] summing up all valid modes...')
         for i in range(len(self.valid_map)):
             if(self.valid_map[i]):
-
                 amplitude = np.exp(time_slot * (-1) * self.ksi[i] * self.omegas[i]) * abs(Uf[i]) / self.omega_ds[i]
                 self.mode_sample[i] = (np.sin(self.omega_ds[i] * time_slot ) * amplitude).astype(np.float32)
                 print('mode ', i, ' omega_d = ', self.omega_ds[i])
+                self.samples += self.mode_sample[i]
 
-                if (self.omega_ds[i] > 3500 and self.omega_ds[i] < 4e10):
-                    self.samples += self.mode_sample[i]
-                else:
-                    print('mode ', i, 'is out of 20hz 20000hz range')
+################### pack test ###################
+        print('[ INFO] packing test...')
+
+        time_slot = np.arange(self.fs * self.duration) / self.fs
+        self.pack_samples = np.zeros(len(time_slot))
+
+        pack_n = 4
+        valid_modes = 61
+
+        modes_each_pack = valid_modes // pack_n
+        modes_left = valid_modes - modes_each_pack * pack_n
+        offset = 1
+
+        print('[ INFO] modes_each_pack = ', modes_each_pack)
+        print('[ INFO] modes_left = ', modes_left)
+        print('[ INFO] offset = ', offset)
+
+        # 单独取其中一个模态
+        for i in range(pack_n):
+            idx = modes_each_pack * i + offset + 3
+            self.pack_samples += self.mode_sample[idx]
+            print('new modes [{}] = old evals [{}]'.format(i, idx))
+
+################### pack test ###################
 
     def saveSound(self):
         filename = os.path.join(self.output_path, 'res_sound.wav')
         tmp_samples = self.samples * 1e6
         write(filename, self.fs, tmp_samples)
 
+        filename = os.path.join(self.output_path, 'pack_sound.wav')
+        tmp_samples = self.pack_samples * 1e6
+        write(filename, self.fs, tmp_samples)
+
     def saveEachMode(self):
         path = os.path.join(self.output_path, 'modes')
         if( not os.path.exists(path) ):
             os.mkdir(path)
-        for i in range(len(self.evals)):
+        for i in range(self.num_modes):
             if (self.valid_map[i]):
                 tmp_samples = self.mode_sample[i] * 1e6
                 write(os.path.join(path, 'mode'+str(i)+'.wav'), self.fs, tmp_samples)

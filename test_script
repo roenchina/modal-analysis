@@ -5,9 +5,10 @@ python
 from ModalAnalysis import *
 ma_ins = ModalAnalysis()
 ma_ins.setVtkFile('./model/plate-nt.vtk')
+ma_ins.setOutputPath('./output/pack-exp-1')
 ma_ins.setMaterial('./material/material-0.cfg')
-ma_ins.setOutputPath('./output/plate-nt-test')
-new_fv = [i for i in range(10)]
+# new_fv = [i for i in range(10)]
+new_fv = []
 ma_ins.setFixedVtx(new_fv)
 
 ma_ins.constructM_ori()
@@ -15,12 +16,16 @@ ma_ins.constructK_ori()
 ma_ins.getM_fix()
 ma_ins.getK_fix()
 ma_ins.eignDecom()
-ma_ins.saveAllData()
+# ma_ins.saveAllData()
 
-ma_ins.setDuration(1.0)
+ma_ins.setDuration(2.0)
 ma_ins.setSampRate(44100)
-
 ma_ins.setForce(10, 0.5, 0.1, 0.2)
 
-# ma_ins.calOmega()
 ma_ins.genSound()
+ma_ins.saveSound()
+
+ma_ins.setOutputPath('./output/plate-nt-debug-compact20')
+ma_ins.packModes(20)
+ma_ins.genSound()
+ma_ins.saveSound()
