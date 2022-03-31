@@ -3,3 +3,6 @@ output
 modes
 archive/data
 __pycache__
+dataset
+!pre-process.py
+!readme.md
