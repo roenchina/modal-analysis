@@ -5,7 +5,6 @@ import time
 from configparser import ConfigParser
 from scipy.linalg import eigh
 
-import pyaudio
 from scipy.io.wavfile import write
 
 
@@ -37,7 +36,7 @@ def getElementStiffness(ele_points, youngs, poisson):
                     I = i*3 + a
                     J = j*3 + b
                     stiff[I][J] = lambda_ * beta_[i][a] * beta_[j][b]
-                    # stiff[I][J] = (lambda_ * beta_[i][a] * beta_[j][b] + mu_ * beta_[i][b] * beta_[j][a])
+                    # stiff[I][J] = lambda_ * beta_[i][a] * beta_[j][b] + mu_ * beta_[i][b] * beta_[j][a]
                     if ( a == b ):
                         sum = 0
                         for k in range(3):
@@ -121,22 +120,20 @@ class ModalAnalysis:
                 mb[3][i] = 1
             beta_ = np.linalg.inv(mb)
 
+            volume = abs(getSignedTetVolume(ele_pts_pos))
+            
             for i in range(4):
                 for j in range(4):
                     for a in range(3):
                         for b in range(3):
                             value = lambda_ * beta_[i][a] * beta_[j][b]
                             if ( a == b ):
-                                sum = 0
+                                sum_ = 0
                                 for k in range(3):
-                                    sum += beta_[i][k] * beta_[j][k]
-                                value += mu_ * sum
-                            value *= 0.5 * abs(getSignedTetVolume(ele_pts_pos))
+                                    sum_ += beta_[i][k] * beta_[j][k]
+                                value += mu_ * sum_
+                            value *= 0.5 * volume
 
-                            # value2 = k_i[3*i+a][3*j+b]
-
-                            # if (value != value2):
-                            #     print('FATAL ERROR!!! {} != {}'.format(value, value2))
                             I = ele_pts_idx[i]
                             J = ele_pts_idx[j]
                             K_ori[3*I+a][3*J+b] += value
@@ -167,10 +164,10 @@ ma_instance.setMaterial(material_path)
 ma_instance.setOutputPath(FLAGS.outputpath)
 
 print("[ INFO] Constructing MK...")
-# ma_instance.constructM_ori()
+ma_instance.constructM_ori()
 ma_instance.constructK_ori()
 
 print("[ INFO] Saving MK...")
-# ma_instance.saveMK_npz()
+ma_instance.saveMK_npz()
 
 print("[ INFO] All completed.")
