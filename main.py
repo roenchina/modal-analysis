@@ -41,6 +41,7 @@ def generate_sound():
     print('[ INFO] force z: ', val_forcez.get())
 
     global ma_ins
+    ma_ins.setOutputPath(_dir_output)
     ma_ins.setDuration(3.0)
     ma_ins.setSampRate(44100)
     ma_ins.setForce(int(val_cpoint.get()), float(val_forcex.get()), float(val_forcey.get()), float(val_forcez.get()))
@@ -56,7 +57,7 @@ def save_data():
     global ma_ins
     ma_ins.saveAllData()
     ma_ins.saveSound()
-    ma_ins.saveEachMode()
+    # ma_ins.saveEachMode()
 
     messagebox.showinfo("Message title", "保存数据成功")
     

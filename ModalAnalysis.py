@@ -83,7 +83,7 @@ class ModalAnalysis:
         print('[ INFO] done')
 
     def setMaterial(self, material_file):
-        print("[ INFO] Reading material file...")
+        print("[ INFO] Reading material file...", material_file)
         cp = ConfigParser()
         cp.read(material_file, 'utf-8')
         self.material = {}
@@ -272,7 +272,7 @@ class ModalAnalysis:
             if (self.omega_ds[i] > 600 and self.omega_ds[i] < 7e4):
                 pass
             else:
-                print('mode ', i, 'is out of 20hz 20000hz range')
+                print('omega_d[{}] = {} is out of 20hz 20000hz range'.format(i, self.omega_ds[i]))
                 self.valid_map[i] = 0
 
     def setDuration(self, duration):
@@ -309,39 +309,39 @@ class ModalAnalysis:
                 print('mode ', i, ' omega_d = ', self.omega_ds[i])
                 self.samples += self.mode_sample[i]
 
-################### pack test ###################
-        print('[ INFO] packing test...')
+################### pack test begin ###################
+        # print('[ INFO] packing test...')
 
-        time_slot = np.arange(self.fs * self.duration) / self.fs
-        self.pack_samples = np.zeros(len(time_slot))
+        # time_slot = np.arange(self.fs * self.duration) / self.fs
+        # self.pack_samples = np.zeros(len(time_slot))
 
-        pack_n = 4
-        valid_modes = 61
+        # pack_n = 4
+        # valid_modes = 61
 
-        modes_each_pack = valid_modes // pack_n
-        modes_left = valid_modes - modes_each_pack * pack_n
-        offset = 1
+        # modes_each_pack = valid_modes // pack_n
+        # modes_left = valid_modes - modes_each_pack * pack_n
+        # offset = 1
 
-        print('[ INFO] modes_each_pack = ', modes_each_pack)
-        print('[ INFO] modes_left = ', modes_left)
-        print('[ INFO] offset = ', offset)
+        # print('[ INFO] modes_each_pack = ', modes_each_pack)
+        # print('[ INFO] modes_left = ', modes_left)
+        # print('[ INFO] offset = ', offset)
 
-        # 单独取其中一个模态
-        for i in range(pack_n):
-            idx = modes_each_pack * i + offset + 3
-            self.pack_samples += self.mode_sample[idx]
-            print('new modes [{}] = old evals [{}]'.format(i, idx))
+        # # 单独取其中一个模态
+        # for i in range(pack_n):
+        #     idx = modes_each_pack * i + offset + 3
+        #     self.pack_samples += self.mode_sample[idx]
+        #     print('new modes [{}] = old evals [{}]'.format(i, idx))
 
-################### pack test ###################
+################### pack test end ###################
 
     def saveSound(self):
         filename = os.path.join(self.output_path, 'res_sound.wav')
         tmp_samples = self.samples * 1e6
         write(filename, self.fs, tmp_samples)
 
-        filename = os.path.join(self.output_path, 'pack_sound.wav')
-        tmp_samples = self.pack_samples * 1e6
-        write(filename, self.fs, tmp_samples)
+        # filename = os.path.join(self.output_path, 'pack_sound.wav')
+        # tmp_samples = self.pack_samples * 1e6
+        # write(filename, self.fs, tmp_samples)
 
     def saveEachMode(self):
         path = os.path.join(self.output_path, 'modes')

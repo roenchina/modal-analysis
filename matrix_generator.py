@@ -139,7 +139,6 @@ parser.add_argument('-op', '--outputpath', type=str, default='./test_eigen/T1.np
 
 FLAGS = parser.parse_args()
 
-# /home/roen/Projects/
 material_path = './material/material-{}.cfg'.format(FLAGS.material)
 
 ma_instance = ModalAnalysis()
