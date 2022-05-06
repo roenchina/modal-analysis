@@ -31,16 +31,17 @@ def writeTetVtk(points, facets, opath):
     print("[ INFO] writing vtk to:", opath)
     tet_mesh.write_vtk(opath)
 
-def normalize(points):
+def normalize(points, scale):
     max_val = max(abs(points.max()), abs(points.min()))
-    points = points / max_val * 0.5
+    points = points / max_val * scale
     return points
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', type=str, default='./model/r01.obj', help='Input file path [default: \'./r01.obj\']')
 parser.add_argument('-o', '--output', type=str, default='./model/r01.vtk', help='Output file path [default: \'./r01.vtk\']')
+parser.add_argument('-s', '--scale', type=float, default=0.5, help='The max delta')
 FLAGS = parser.parse_args()
 
 obj_points, obj_facets = readObj(FLAGS.input)
-obj_points = normalize(obj_points)
+obj_points = normalize(obj_points, FLAGS.scale)
 writeTetVtk(obj_points, obj_facets, FLAGS.output)

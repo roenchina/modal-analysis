@@ -55,7 +55,7 @@ def generate_sound():
 
 def save_data():
     global ma_ins
-    ma_ins.saveAllData()
+    ma_ins.saveEvals()
     ma_ins.saveSound()
     # ma_ins.saveEachMode()
 

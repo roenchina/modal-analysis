@@ -5,3 +5,4 @@ archive/data
 __pycache__
 dataset/**/*.txt
 dataset/**/*.stl
+DATA

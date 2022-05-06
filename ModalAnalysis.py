@@ -126,19 +126,64 @@ class ModalAnalysis:
         self.M_fix = M_ori
         print('[ INFO] done')
 
+    # def constructK_ori(self):
+    #     print("[ INFO] Generating K ori matrix...")
+    #     K_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
+    #     for ele, ele_pts_idx in enumerate(self.mesh_elements):
+    #         ele_pts_pos = [self.mesh_points[ele_pts_idx[p]] for p in range(4)]
+    #         k_i = getElementStiffness(ele_pts_pos, self.material['youngs'], self.material['poisson'])
+    #         for i in range(4):
+    #             for j in range(4):
+    #                 for k in range(3):
+    #                     for l in range(3):
+    #                         I = ele_pts_idx[i]
+    #                         J = ele_pts_idx[j]
+    #                         K_ori[3*I+k][3*J+l] += k_i[3*i+k][3*j+l]
+    #         if(ele % 50 == 0):
+    #             print("at element ", ele)
+    #     self.K_ori = K_ori
+    #     self.K_fix = K_ori
+    #     print('[ INFO] done')
+
     def constructK_ori(self):
         print("[ INFO] Generating K ori matrix...")
         K_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
         for ele, ele_pts_idx in enumerate(self.mesh_elements):
             ele_pts_pos = [self.mesh_points[ele_pts_idx[p]] for p in range(4)]
-            k_i = getElementStiffness(ele_pts_pos, self.material['youngs'], self.material['poisson'])
+
+            # k_i = getElementStiffness(ele_pts_pos, self.material['youngs'], self.material['poisson'])
+
+            youngs = self.material['youngs']
+            poisson = self.material['poisson']
+
+            # same as getElementStiffness
+            lambda_ = youngs * poisson / (1 + poisson) / (1 - 2 * poisson)
+            mu_ = youngs * 0.5 / (1 + poisson) 
+            mb = np.zeros((4, 4))
+            for i in range(4):
+                mb[0][i] = ele_pts_pos[i][0]
+                mb[1][i] = ele_pts_pos[i][1]
+                mb[2][i] = ele_pts_pos[i][2]
+                mb[3][i] = 1
+            beta_ = np.linalg.inv(mb)
+
+            volume = abs(getSignedTetVolume(ele_pts_pos))
+            
             for i in range(4):
                 for j in range(4):
-                    for k in range(3):
-                        for l in range(3):
+                    for a in range(3):
+                        for b in range(3):
+                            value = lambda_ * beta_[i][a] * beta_[j][b]
+                            if ( a == b ):
+                                sum_ = 0
+                                for k in range(3):
+                                    sum_ += beta_[i][k] * beta_[j][k]
+                                value += mu_ * sum_
+                            value *= 0.5 * volume
+
                             I = ele_pts_idx[i]
                             J = ele_pts_idx[j]
-                            K_ori[3*I+k][3*J+l] += k_i[3*i+k][3*j+l]
+                            K_ori[3*I+a][3*J+b] += value
             if(ele % 50 == 0):
                 print("at element ", ele)
         self.K_ori = K_ori
