@@ -40,20 +40,21 @@ class ModalAnalysis:
         print('[ INFO] done')
 
     def setMaterial(self, material_file):
-        print("[ INFO] Reading material file...", material_file)
+        # print("[ INFO] Reading material file...", material_file)
         cp = ConfigParser()
         cp.read(material_file, 'utf-8')
         self.material = {}
         for key in cp['DEFAULT']:
-            self.material[key] = float(cp['DEFAULT'][key])
-        print('[ INFO] done')
+            if(key != 'name'):
+                self.material[key] = float(cp['DEFAULT'][key])
+        # print('[ INFO] done')
 
     def setOutputPath(self, output_path):
         self.output_path = output_path
 
 
     def constructM_ori(self):
-        print("[ INFO] Generating M ori matrix...")
+        # print("[ INFO] Generating M ori matrix...")
         M_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
         for ele, ele_pts_idx in enumerate(self.mesh_elements):
             ele_pts_pos = [self.mesh_points[ele_pts_idx[p]] for p in range(4)]
@@ -65,14 +66,14 @@ class ModalAnalysis:
                         J = ele_pts_idx[j]
                         M_ori[3*I+k][3*J+k] += 0.05 * self.material['density'] * volume * ( 1 + (i == j))
 
-            if(ele % 50 == 0):
-                print("at element ", ele)
+            # if(ele % 50 == 0):
+                # print("at element ", ele)
         self.M_ori = M_ori
         self.M_coo = coo_matrix(M_ori)
-        print('[ INFO] done')
+        # print('[ INFO] done')
 
     def constructK_ori(self):
-        print("[ INFO] Generating K ori matrix...")
+        # print("[ INFO] Generating K ori matrix...")
         K_ori = np.zeros((3 * self.num_vtx, 3 * self.num_vtx))
         for ele, ele_pts_idx in enumerate(self.mesh_elements):
             ele_pts_pos = [self.mesh_points[ele_pts_idx[p]] for p in range(4)]
@@ -110,11 +111,11 @@ class ModalAnalysis:
                             I = ele_pts_idx[i]
                             J = ele_pts_idx[j]
                             K_ori[3*I+a][3*J+b] += value
-            if(ele % 50 == 0):
-                print("at element ", ele)
+            # if(ele % 50 == 0):
+                # print("at element ", ele)
         self.K_ori = K_ori
         self.K_coo = coo_matrix(K_ori)
-        print('[ INFO] done')
+        # print('[ INFO] done')
 
     def ged(self, k = 50):
         from scipy.sparse.linalg import eigsh
@@ -146,17 +147,26 @@ ma_instance.setVtkFile(FLAGS.inputpath)
 ma_instance.setMaterial(material_path)
 ma_instance.setOutputPath(FLAGS.outputpath)
 
-print("[ INFO] Constructing MK...")
+TIME_0 = time.time()
+# print("[ INFO] Constructing MK...")
 ma_instance.constructM_ori()
+TIME_1 = time.time()
 ma_instance.constructK_ori()
+TIME_2 = time.time()
 
-print("[ INFO] Saving MK...")
-ma_instance.saveMK_npz()
+# print("[ INFO] Saving MK...")
+# ma_instance.saveMK_npz()
 
-print("[ INFO] GED...")
+# print("[ INFO] GED...")
 ma_instance.ged()
+TIME_3 = time.time()
 
-print("[ INFO] Saving evals evecs...")
-ma_instance.saveEigen()
+# print("[ INFO] Saving evals evecs...")
+# ma_instance.saveEigen()
 
-print("[ INFO] All completed.")
+# print("[ INFO] All completed.")
+
+
+print('[ PROFILE] M  ', TIME_1 - TIME_0)
+print('[ PROFILE] K  ', TIME_2 - TIME_0)
+print('[ PROFILE] GED', TIME_3 - TIME_0)
