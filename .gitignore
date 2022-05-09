@@ -6,4 +6,5 @@ __pycache__
 dataset/**/*.txt
 dataset/**/*.stl
 DATA
+vis/EXP_srtp
 vis/EXP
