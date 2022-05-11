@@ -1,6 +1,6 @@
 import meshio
 import argparse, os
-
+import numpy as np
 
 def readObj(path):
     print("[ INFO] Reading obj mesh", path)
@@ -43,5 +43,6 @@ parser.add_argument('-s', '--scale', type=float, default=0.5, help='The max delt
 FLAGS = parser.parse_args()
 
 obj_points, obj_facets = readObj(FLAGS.input)
+obj_facets = np.unique(obj_facets, axis=0)
 obj_points = normalize(obj_points, FLAGS.scale)
 writeTetVtk(obj_points, obj_facets, FLAGS.output)
