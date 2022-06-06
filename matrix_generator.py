@@ -78,8 +78,6 @@ class ModalAnalysis:
         for ele, ele_pts_idx in enumerate(self.mesh_elements):
             ele_pts_pos = [self.mesh_points[ele_pts_idx[p]] for p in range(4)]
 
-            # k_i = getElementStiffness(ele_pts_pos, self.material['youngs'], self.material['poisson'])
-
             youngs = self.material['youngs']
             poisson = self.material['poisson']
 
@@ -147,19 +145,19 @@ ma_instance.setVtkFile(FLAGS.inputpath)
 ma_instance.setMaterial(material_path)
 ma_instance.setOutputPath(FLAGS.outputpath)
 
-TIME_0 = time.time()
+# TIME_0 = time.time()
 # print("[ INFO] Constructing MK...")
 ma_instance.constructM_ori()
-TIME_1 = time.time()
+# TIME_1 = time.time()
 ma_instance.constructK_ori()
-TIME_2 = time.time()
+# TIME_2 = time.time()
 
 # print("[ INFO] Saving MK...")
 # ma_instance.saveMK_npz()
 
 # print("[ INFO] GED...")
 ma_instance.ged()
-TIME_3 = time.time()
+# TIME_3 = time.time()
 
 # print("[ INFO] Saving evals evecs...")
 # ma_instance.saveEigen()
@@ -167,6 +165,6 @@ TIME_3 = time.time()
 # print("[ INFO] All completed.")
 
 
-print('[ PROFILE] M  ', TIME_1 - TIME_0)
-print('[ PROFILE] K  ', TIME_2 - TIME_0)
-print('[ PROFILE] GED', TIME_3 - TIME_0)
+# print('[ TIMECOST] M  ', TIME_1 - TIME_0)
+# print('[ TIMECOST] K  ', TIME_2 - TIME_0)
+# print('[ TIMECOST] GED', TIME_3 - TIME_0)
